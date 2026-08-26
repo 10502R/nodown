@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}거래 탐지{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">잠재적 피해 거래 탐지</h2>
+
+{% if case %}
+  <h4>사례: {{ case.case_id }}</h4>
+  <p>가맹점: {{ case.merchant_name }} ({{ case.merchant_status }})</p>
+  {% if verdict %}
+    <div class="alert alert-info">
+      <strong>{{ verdict.verdict }}</strong>
+      <ul class="mb-0 mt-2">
+        {% for key, value in verdict.conditions.items() %}
+          <li>{{ key }}: {{ value }}</li>
+        {% endfor %}
+      </ul>
+      <p class="mb-0 mt-2 text-muted">{{ verdict.final_decision_notice }}</p>
+    </div>
+  {% endif %}
+{% elif cases %}
+  <table class="table">
+    <thead>
+      <tr><th>사례 ID</th><th>가맹점</th><th>상태</th></tr>
+    </thead>
+    <tbody>
+      {% for c in cases %}
+      <tr>
+        <td><a href="{{ url_for('detection.case_detail', case_id=c.case_id) }}">{{ c.case_id }}</a></td>
+        <td>{{ c.merchant_name }}</td>
+        <td>{{ c.merchant_status }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="text-muted">탐지된 사례가 없습니다.</p>
+{% endif %}
+{% endblock %}

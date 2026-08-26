@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}nodown{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+  <h1 class="mb-3">장기할부 서비스 중단 피해 선제 탐지</h1>
+  <p class="lead">가맹점 폐업 시 카드사가 먼저 피해 거래를 탐지하고, AI가 할부항변 신청 자료 준비를 도와드립니다.</p>
+  <a class="btn btn-primary btn-lg mt-3" href="{{ url_for('detection.index') }}">탐지된 사례 보기</a>
+</div>
+{% endblock %}

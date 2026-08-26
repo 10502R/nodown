@@ -1,0 +1,56 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## 프로젝트 개요
+장기할부 서비스 중단 피해 선제 탐지 및 항변 준비 지원 서비스.
+헬스장/필라테스/학원 등 장기 할부 결제 후 가맹점 폐업 시,
+카드사가 잠재적 피해 거래를 먼저 탐지하고 AI가 소비자의 
+할부항변 신청 자료 준비를 지원하는 서비스.
+
+## 스택
+- 백엔드: Python Flask + Jinja2
+- 프론트: HTML/CSS + Vanilla JavaScript + Bootstrap
+- 데이터: JSON 합성데이터 (DB 없음)
+- AI: LLM API (OpenAI 사용 예정), CLOVA OCR API
+- 판정: Python 규칙 엔진 (코드 기반, 확률/점수 임의 생성 금지)
+- 배포: Render 또는 Vercel
+
+## 폴더 구조
+project/
+├─ app.py, requirements.txt, .env, .gitignore
+├─ routes/       (detection.py, evidence.py, analysis.py, result.py)
+├─ services/     (case_service.py, ocr_service.py, llm_service.py, rule_service.py, report_service.py)
+├─ templates/    (각 화면 html)
+├─ static/       (css/js/images)
+├─ data/         (transactions.json, demo_cases.json 등 합성데이터)
+├─ prompts/      (LLM 프롬프트 txt 분리 보관)
+└─ tests/
+
+## 프로젝트 상태
+초기 Flask 뼈대 구성 완료 (2026-08-26 기준):
+- app.py에 4개 blueprint(detection/evidence/analysis/result) 등록 완료
+- 합성 샘플 데이터 2건 (CASE-001: 충족 가능, CASE-002: 추가자료 필요)
+- 규칙 엔진 3단계 판정 로직 및 테스트(pytest) 통과
+- 6개 라우트 200 응답 확인
+- OCR/LLM 실제 연동, 각 담당자 세부 로직은 아직 스텁 상태 —
+  담당자별로 해당 routes/services 파일을 이어서 채워나가면 됨
+
+## 역할별 담당 (Flask Blueprint 단위로 분리)
+
+| 역할 | 담당 업무 | 담당 파일 |
+| --- | --- | --- |
+| A | 거래 탐지, 가맹점 상태 확인, 사례 생성, 규칙 엔진, 카드사 알림 | routes/detection.py, services/case_service.py, services/rule_service.py |
+| B | 소비자 상황 확인, 파일 업로드, OCR, 핵심정보 추출 | routes/evidence.py, services/ocr_service.py |
+| C | LLM 호출, 시간순 분석, 모순/누락 탐지, 제출자료 내용 생성 | routes/analysis.py, services/llm_service.py, prompts/ |
+| D | 전체 디자인, 최종 결과, 제출자료 내려받기, 화면 연결, 배포 | routes/result.py, services/report_service.py, templates/, static/ |
+
+## 중요 규칙
+- app.py, requirements.txt는 팀 상의 없이 수정 금지
+- AI는 법적 권리나 할부항변 인정 여부를 최종 판단하지 않음. 
+  최종 판정은 항상 "카드사가 결정"이라는 문구를 결과 화면에 명시
+- 규칙 엔진 판정 결과는 3단계로만 제한: 
+  "기본요건 충족 가능성 있음" / "추가자료 확인 필요" / "기본요건 충족 어려움"
+- 위험점수나 확률을 임의로 생성하지 않음 — 충족/부족 조건을 그대로 보여줌
+- API 키(LLM, CLOVA OCR)는 반드시 .env에서만 읽고 클라이언트 코드에 노출 금지
+- MVP는 실제 카드사 API 연동 없이 합성 거래데이터만 사용

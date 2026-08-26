@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}시간순 분석{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">거래/이용 내역 시간순 분석</h2>
+
+<form method="post" action="{{ url_for('analysis.run') }}" class="mb-4">
+  <div class="mb-3">
+    <label class="form-label" for="case_id">사례 ID</label>
+    <input class="form-control" type="text" name="case_id" id="case_id" required>
+  </div>
+  <button class="btn btn-primary" type="submit">분석 실행</button>
+</form>
+
+{% if analysis %}
+  <h4>분석 결과</h4>
+  <div class="bg-light p-3">{{ analysis }}</div>
+{% endif %}
+{% endblock %}
