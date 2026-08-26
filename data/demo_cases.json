@@ -1,0 +1,18 @@
+[
+  {
+    "case_id": "CASE-001",
+    "merchant_name": "행복 필라테스 강남점",
+    "merchant_status": "closed",
+    "remaining_installments": 8,
+    "service_used_after_closure": false,
+    "evidence_files": ["contract.pdf", "receipt.pdf"]
+  },
+  {
+    "case_id": "CASE-002",
+    "merchant_name": "그린 헬스클럽 서초점",
+    "merchant_status": "closed",
+    "remaining_installments": 3,
+    "service_used_after_closure": null,
+    "evidence_files": []
+  }
+]

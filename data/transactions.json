@@ -1,0 +1,20 @@
+[
+  {
+    "transaction_id": "TX-1001",
+    "case_id": "CASE-001",
+    "merchant_name": "행복 필라테스 강남점",
+    "card_last4": "1234",
+    "amount": 1200000,
+    "installment_months": 12,
+    "purchase_date": "2025-11-01"
+  },
+  {
+    "transaction_id": "TX-1002",
+    "case_id": "CASE-002",
+    "merchant_name": "그린 헬스클럽 서초점",
+    "card_last4": "5678",
+    "amount": 900000,
+    "installment_months": 6,
+    "purchase_date": "2025-09-15"
+  }
+]

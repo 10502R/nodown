@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}최종 결과{% endblock %}
+
+{% block content %}
+{% if result %}
+  <h2 class="mb-4">최종 결과 — {{ result.case.case_id }}</h2>
+  <div class="alert alert-info">
+    <strong>{{ result.verdict.verdict }}</strong>
+    <ul class="mb-0 mt-2">
+      {% for key, value in result.verdict.conditions.items() %}
+        <li>{{ key }}: {{ value }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  <p class="text-muted">{{ result.verdict.final_decision_notice }}</p>
+  <a class="btn btn-primary" href="{{ url_for('result.download', case_id=result.case.case_id) }}">제출자료 다운로드</a>
+{% else %}
+  <p class="text-muted">사례를 찾을 수 없습니다.</p>
+{% endif %}
+{% endblock %}

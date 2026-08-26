@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}증빙자료 업로드{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">증빙자료 업로드</h2>
+
+<form method="post" action="{{ url_for('evidence.upload') }}" enctype="multipart/form-data" class="mb-4">
+  <div class="mb-3">
+    <label class="form-label" for="file">계약서 / 결제내역 / 이용확인서 등</label>
+    <input class="form-control" type="file" name="file" id="file" required>
+  </div>
+  <button class="btn btn-primary" type="submit">업로드 및 인식</button>
+</form>
+
+{% if extracted %}
+  <h4>인식 결과</h4>
+  <pre class="bg-light p-3">{{ extracted }}</pre>
+{% endif %}
+{% endblock %}
