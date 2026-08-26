@@ -1,20 +1,216 @@
 {% extends "base.html" %}
 
-{% block title %}시간순 분석{% endblock %}
+{% block title %}AI 증빙 분석 결과 리포트{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">거래/이용 내역 시간순 분석</h2>
+<style>
+  .card { border-radius: 0.75rem; border: 1px solid #e9ecef; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem; }
+  .card-header { background-color: #ffffff; border-bottom: 1px solid #f1f3f5; font-weight: 600; padding: 1rem 1.25rem; }
+  .timeline-item { position: relative; padding-left: 2rem; border-left: 2px solid #dee2e6; margin-bottom: 1.25rem; }
+  .timeline-item::before { content: ""; position: absolute; left: -0.45rem; top: 0.25rem; width: 0.8rem; height: 0.8rem; border-radius: 50%; background-color: #0d6efd; }
+  .summary-box { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.5rem; padding: 1.25rem; white-space: pre-wrap; line-height: 1.6; font-size: 0.95rem; }
+</style>
 
-<form method="post" action="{{ url_for('analysis.run') }}" class="mb-4">
-  <div class="mb-3">
-    <label class="form-label" for="case_id">사례 ID</label>
-    <input class="form-control" type="text" name="case_id" id="case_id" required>
+<!-- 상단 헤더 섹션 -->
+<div class="d-flex flex-wrap justify-content-between align-items-center pb-3 mb-4 border-bottom">
+  <div>
+    <div class="d-flex align-items-center gap-2">
+      <h2 class="h4 mb-0 fw-bold">거래/이용 내역 및 증빙 AI 정밀 분석</h2>
+      <span class="badge bg-secondary">{% if case %}{{ case.case_id }}{% else %}CASE-001{% endif %}</span>
+      <span class="badge bg-warning text-dark"><i class="bi bi-shield-exclamation me-1"></i>시연용 합성 데이터</span>
+    </div>
+    <p class="text-muted small mb-0 mt-1">가맹점: <strong>{% if case %}{{ case.merchant_name }}{% else %}올데이 피트니스{% endif %}</strong> | 제출된 증빙 문서와 추출 데이터를 대조 분석한 결과입니다.</p>
   </div>
-  <button class="btn btn-primary" type="submit">분석 실행</button>
+  <div class="mt-2 mt-md-0">
+    <span class="badge bg-light text-secondary border px-3 py-2"><i class="bi bi-clock me-1"></i>분석 완료 (8개 핵심 항목 검토)</span>
+  </div>
+</div>
+
+<!-- 사례 ID 입력/실행 폼 (필요시 접어서 사용 가능) -->
+<form method="post" action="{{ url_for('analysis.run') if 'analysis.run' in url_for.__globals__.get('current_app', {}).view_functions else '#' }}" class="card p-3 mb-4 bg-light">
+  <div class="row align-items-end g-2">
+    <div class="col-md-9">
+      <label class="form-label small fw-semibold" for="case_id">사례 ID 재조회</label>
+      <input class="form-control form-control-sm" type="text" name="case_id" id="case_id" value="{% if case %}{{ case.case_id }}{% else %}CASE-001{% endif %}" required>
+    </div>
+    <div class="col-md-3">
+      <button class="btn btn-sm btn-primary w-100" type="submit">다시 분석 실행</button>
+    </div>
+  </div>
 </form>
 
-{% if analysis %}
-  <h4>분석 결과</h4>
-  <div class="bg-light p-3">{{ analysis }}</div>
-{% endif %}
+{% set res = analysis_result if analysis_result is defined else (analysis if analysis is mapping else {}) %}
+
+<div class="row">
+  <!-- 왼쪽 컬럼 (타임라인, 확인된 사실, 소비자 주장, 모순점) -->
+  <div class="col-lg-6">
+    
+    <!-- 1. 사건 타임라인 -->
+    <div class="card">
+      <div class="card-header d-flex align-items-center text-primary">
+        <i class="bi bi-calendar-event me-2"></i> 1. 사건 일자별 타임라인
+      </div>
+      <div class="card-body pb-1">
+        {% if res.timeline %}
+          <div class="timeline ps-2">
+            {% for item in res.timeline %}
+            <div class="timeline-item">
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle mb-1">{{ item.date }}</span>
+              <div class="fw-semibold text-dark small">{{ item.event }}</div>
+              <small class="text-muted"><i class="bi bi-file-earmark-text me-1"></i>출처: {{ item.source }}</small>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted small mb-2">타임라인 정보가 없습니다.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- 2. 확인된 객관적 사실 -->
+    <div class="card">
+      <div class="card-header d-flex align-items-center text-success">
+        <i class="bi bi-check-circle me-2"></i> 2. 확인된 사실 (증빙 기반)
+      </div>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+          {% for fact in res.confirmedFacts %}
+          <li class="list-group-item px-0 py-2 border-0 d-flex align-items-start">
+            <i class="bi bi-check-lg text-success me-2 mt-1 flex-shrink-0"></i>
+            <span class="text-dark small">{{ fact }}</span>
+          </li>
+          {% else %}
+          <li class="list-group-item px-0 py-1 border-0 text-muted small">확인된 사실 항목이 없습니다.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <!-- 3. 소비자 주장 -->
+    <div class="card">
+      <div class="card-header d-flex align-items-center text-info-emphasis">
+        <i class="bi bi-chat-quote me-2"></i> 3. 소비자 주장 및 진술
+      </div>
+      <div class="card-body">
+        {% for claim in res.userClaims %}
+        <div class="p-2 mb-2 bg-light border-start border-3 border-info rounded-end small text-secondary">
+          "{{ claim }}"
+        </div>
+        {% else %}
+        <p class="text-muted small mb-0">접수된 소비자 진술이 없습니다.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- 5. 자료 간 모순점 -->
+    <div class="card">
+      <div class="card-header d-flex align-items-center text-danger">
+        <i class="bi bi-exclamation-triangle me-2"></i> 5. 자료 간 모순점 검토
+      </div>
+      <div class="card-body">
+        {% for contradiction in res.contradictions %}
+          {% if "없음" in contradiction %}
+            <div class="alert alert-success d-flex align-items-center mb-0 py-2 small" role="alert">
+              <i class="bi bi-shield-check me-2 flex-shrink-0"></i>
+              <div>{{ contradiction }}</div>
+            </div>
+          {% else %}
+            <div class="alert alert-danger d-flex align-items-center mb-0 py-2 small" role="alert">
+              <i class="bi bi-exclamation-circle me-2 flex-shrink-0"></i>
+              <div>{{ contradiction }}</div>
+            </div>
+          {% endif %}
+        {% else %}
+          <div class="alert alert-success py-2 small mb-0">확인된 모순 없음</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 오른쪽 컬럼 (미확인 사항, 부족한 증빙, 추가 확인 질문, 최종 제출 요약) -->
+  <div class="col-lg-6">
+
+    <!-- 4. 미확인 사항 -->
+    <div class="card">
+      <div class="card-header d-flex align-items-center text-secondary">
+        <i class="bi bi-question-circle me-2"></i> 4. 미확인 사항
+      </div>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+          {% for item in res.unresolvedItems %}
+          <li class="list-group-item px-0 py-2 border-0 d-flex align-items-start">
+            <i class="bi bi-dash text-secondary me-2 flex-shrink-0"></i>
+            <span class="text-muted small">{{ item }}</span>
+          </li>
+          {% else %}
+          <li class="list-group-item px-0 py-1 border-0 text-muted small">미확인 사항이 없습니다.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <!-- 6. 부족한 증빙 (보완 권장 서류) -->
+    <div class="card">
+      <div class="card-header d-flex align-items-center text-warning-emphasis">
+        <i class="bi bi-paperclip me-2"></i> 6. 부족한 증빙 (보완 권장)
+      </div>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+          {% for doc in res.missingEvidence %}
+          <li class="list-group-item px-0 py-2 border-0 d-flex align-items-start">
+            <i class="bi bi-file-earmark-plus text-warning me-2 mt-1 flex-shrink-0"></i>
+            <span class="text-dark small">{{ doc }}</span>
+          </li>
+          {% else %}
+          <li class="list-group-item px-0 py-1 border-0 text-muted small">추가 제출이 권장되는 서류가 없습니다.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <!-- 7. 소비자 추가 확인 질문 -->
+    <div class="card">
+      <div class="card-header d-flex align-items-center text-primary-emphasis">
+        <i class="bi bi-patch-question me-2"></i> 7. 추가 확인 질문 (체크포인트)
+      </div>
+      <div class="card-body">
+        <ol class="list-group list-group-numbered list-group-flush">
+          {% for q in res.followUpQuestions %}
+          <li class="list-group-item px-0 py-2 border-0 d-flex align-items-start small text-secondary">
+            <span class="ms-2">{{ q }}</span>
+          </li>
+          {% else %}
+          <li class="list-group-item px-0 py-1 border-0 text-muted small">추가 질문 항목이 없습니다.</li>
+          {% endfor %}
+        </ol>
+      </div>
+    </div>
+
+    <!-- 8. 제출자료 초안 요약 -->
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center text-dark">
+        <span><i class="bi bi-file-text me-2"></i> 8. 카드사 제출용 요약 초안</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="navigator.clipboard.writeText(document.getElementById('summaryText').innerText); alert('요약 초안이 복사되었습니다.');">
+          <i class="bi bi-copy me-1"></i>복사
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="summaryText" class="summary-box">{% if res.submissionSummary %}{{ res.submissionSummary }}{% else %}요약 데이터가 없습니다.{% endif %}</div>
+        <small class="text-muted mt-2 d-block">* 본 요약은 제출 참고용이며, 최종 항변권 수용 및 환불 여부는 카드사 심사를 거쳐 결정됩니다.</small>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 하단 네비게이션 버튼 바 -->
+<div class="d-flex justify-content-between align-items-center pt-3 mt-4 border-top">
+  <a href="/case/CASE-001/evidence" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i> 이전 (증빙 자료 수정)
+  </a>
+  <a href="/case/CASE-001/result" class="btn btn-primary px-4">
+    다음 (최종 서류 검토) <i class="bi bi-arrow-right ms-1"></i>
+  </a>
+</div>
 {% endblock %}
