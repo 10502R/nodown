@@ -1,0 +1,100 @@
+{
+  "case": {
+    "case_id": "CASE-001",
+    "isSynthetic": true,
+    "merchant_name": "올데이 피트니스",
+    "merchant_status": "closed",
+    "closedDate": "2026-08-10",
+    "contractDate": "2026-03-02",
+    "purchaseDate": "2026-03-02",
+    "amount": 1200000,
+    "installment_months": 12,
+    "paid_installments": 5,
+    "remaining_installments": 7,
+    "remaining_amount": 700000,
+    "service_used_after_closure": false,
+    "refund_request_channel": "sms",
+    "refund_request_note": "문자로 요청했으나 답변이 없음"
+  },
+  "documents": [
+    {
+      "documentId": "DOC-001",
+      "type": "contract",
+      "label": "헬스장 이용계약서",
+      "fileName": "allday_fitness_contract.pdf",
+      "isSynthetic": true
+    },
+    {
+      "documentId": "DOC-002",
+      "type": "sms",
+      "label": "환불 요청 문자 대화",
+      "fileName": "refund_request_sms.png",
+      "isSynthetic": true
+    },
+    {
+      "documentId": "DOC-003",
+      "type": "notice",
+      "label": "서비스 중단 안내문",
+      "fileName": "closure_notice.pdf",
+      "isSynthetic": true
+    }
+  ],
+  "extractedFields": {
+    "contractDate": "2026-03-02",
+    "contractAmount": 1200000,
+    "serviceStartDate": "2026-03-02",
+    "serviceEndDate": "2027-03-01",
+    "refundRequestDate": "2026-08-11",
+    "serviceStopDate": "2026-08-10",
+    "replacementServiceOffered": null,
+    "sourceDocuments": [
+      {
+        "field": "contractDate",
+        "documentId": "DOC-001",
+        "label": "헬스장 이용계약서"
+      },
+      {
+        "field": "contractAmount",
+        "documentId": "DOC-001",
+        "label": "헬스장 이용계약서"
+      },
+      {
+        "field": "serviceStartDate",
+        "documentId": "DOC-001",
+        "label": "헬스장 이용계약서"
+      },
+      {
+        "field": "serviceEndDate",
+        "documentId": "DOC-001",
+        "label": "헬스장 이용계약서"
+      },
+      {
+        "field": "refundRequestDate",
+        "documentId": "DOC-002",
+        "label": "환불 요청 문자 대화"
+      },
+      {
+        "field": "serviceStopDate",
+        "documentId": "DOC-003",
+        "label": "서비스 중단 안내문"
+      }
+    ]
+  },
+  "rawTexts": [
+    {
+      "documentId": "DOC-001",
+      "label": "헬스장 이용계약서",
+      "text": "[합성문서] 올데이 피트니스 이용계약서\n계약일: 2026년 3월 2일\n계약금액: 1,200,000원\n결제방식: 신용카드 12개월 할부\n이용기간: 2026년 3월 2일부터 2027년 3월 1일까지 (12개월)\n상품: 헬스장 시설 이용권\n본 문서는 시연용 합성자료이며 실제 업체의 계약서가 아닙니다."
+    },
+    {
+      "documentId": "DOC-002",
+      "label": "환불 요청 문자 대화",
+      "text": "[합성문서] 문자 대화\n2026.08.11 소비자: 시설이 문을 닫아 이용이 어렵습니다. 남은 기간에 대한 환불을 요청합니다.\n2026.08.13 기준: 가맹점 측 답변 없음.\n본 문서는 시연용 합성자료입니다."
+    },
+    {
+      "documentId": "DOC-003",
+      "label": "서비스 중단 안내문",
+      "text": "[합성문서] 서비스 중단 안내\n올데이 피트니스는 2026년 8월 10일자로 시설 운영을 중단합니다.\n본 문서는 시연용 합성자료이며 실제 업체의 안내문이 아닙니다."
+    }
+  ]
+}
