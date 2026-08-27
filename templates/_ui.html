@@ -1,0 +1,49 @@
+{# 담당: D — 팀 공통 UI 조각. 다른 화면에서 import해서 쓴다.
+   사용법: {% from "_ui.html" import source_badge, step_bar, notice %} #}
+
+{% macro source_badge(source, extra="") %}
+  {%- set tone = {
+    "합성 카드거래": "badge-source-synthetic",
+    "API 명세 기반 합성 응답": "badge-source-mock",
+    "실제 사용자 입력": "badge-source-user",
+    "실제 OCR 결과": "badge-source-ocr",
+    "실제 AI 분석 결과": "badge-source-ai",
+    "규칙 엔진 판정": "badge-source-rule",
+    "예비 데이터": "badge-source-fixture"
+  }.get(source, "badge-source-fixture") -%}
+  <span class="badge-source {{ tone }} {{ extra }}" title="이 화면에 표시된 값의 출처입니다.">
+    데이터 출처 · {{ source }}
+  </span>
+{% endmacro %}
+
+{% macro step_bar(active) %}
+  {%- set steps = [
+    ("거래 탐지", 1), ("앱 알림", 2), ("상황 확인", 3), ("자료 입력", 4),
+    ("AI 분석", 5), ("결과", 6), ("제출자료", 7)
+  ] -%}
+  <nav class="step-bar" aria-label="진행 단계">
+    <ol>
+      {% for label, index in steps %}
+        <li class="{% if index < active %}done{% elif index == active %}current{% endif %}">
+          <span class="step-num">{{ index }}</span>
+          <span class="step-label">{{ label }}</span>
+        </li>
+      {% endfor %}
+    </ol>
+  </nav>
+{% endmacro %}
+
+{% macro notice(text, tone="info") %}
+  <div class="alert alert-{{ tone }} small mb-3">{{ text }}</div>
+{% endmacro %}
+
+{% macro nav_buttons(prev_url=None, prev_label="이전", next_url=None, next_label="다음") %}
+  <div class="page-nav">
+    {% if prev_url %}
+      <a class="btn btn-outline-secondary" href="{{ prev_url }}">← {{ prev_label }}</a>
+    {% else %}<span></span>{% endif %}
+    {% if next_url %}
+      <a class="btn btn-primary" href="{{ next_url }}" data-loading="다음 화면을 준비하고 있습니다">{{ next_label }} →</a>
+    {% endif %}
+  </div>
+{% endmacro %}

@@ -1,0 +1,17 @@
+{
+  "verdict": "기본요건 충족 가능성 있음",
+  "condition_items": [
+    {"key": "merchant_closed", "label": "가맹점 폐업 여부", "value": true, "status": "충족"},
+    {"key": "installment_remaining", "label": "남은 할부금 존재 여부", "value": true, "status": "충족"},
+    {"key": "service_unused", "label": "서비스 중단 후 미이용 여부", "value": true, "status": "충족"},
+    {"key": "has_evidence", "label": "증빙자료 확보 여부", "value": true, "status": "충족"},
+    {"key": "amount_threshold", "label": "결제금액 기준", "value": true, "status": "충족"},
+    {"key": "installment_term", "label": "할부기간 기준", "value": true, "status": "충족"},
+    {"key": "refund_not_completed", "label": "환불 미완료 여부", "value": true, "status": "충족"},
+    {"key": "replacement_not_offered", "label": "대체 서비스 미제공 여부", "value": true, "status": "충족"},
+    {"key": "consumer_not_at_fault", "label": "소비자 귀책 없음", "value": true, "status": "충족"}
+  ],
+  "missing_conditions": [],
+  "failed_conditions": [],
+  "final_decision_notice": "최종 판정은 카드사가 결정합니다."
+}
