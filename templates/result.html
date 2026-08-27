@@ -1,21 +1,133 @@
 {% extends "base.html" %}
+{% from "_ui.html" import source_badge, nav_buttons %}
 
-{% block title %}최종 결과{% endblock %}
+{% block title %}기본요건 확인 결과{% endblock %}
 
 {% block content %}
 {% if result %}
-  <h2 class="mb-4">최종 결과 — {{ result.case.case_id }}</h2>
-  <div class="alert alert-info">
-    <strong>{{ result.verdict.verdict }}</strong>
-    <ul class="mb-0 mt-2">
-      {% for key, value in result.verdict.conditions.items() %}
-        <li>{{ key }}: {{ value }}</li>
-      {% endfor %}
-    </ul>
+{% set case = result.case %}
+{% set verdict = result.verdict %}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-0">기본요건 확인 결과 · {{ case.case_id }}</h1>
+  <div class="d-flex flex-wrap gap-1">
+    {{ source_badge(result.case_source) }}
+    {{ source_badge(result.verdict_source) }}
+    {{ source_badge(result.analysis_source) }}
   </div>
-  <p class="text-muted">{{ result.verdict.final_decision_notice }}</p>
-  <a class="btn btn-primary" href="{{ url_for('result.download', case_id=result.case.case_id) }}">제출자료 다운로드</a>
+</div>
+
+<div class="verdict-banner verdict-{{ result.verdict_tone }} mb-3">
+  <p class="verdict-text">{{ verdict.verdict }}</p>
+  <p class="mb-0 mt-2 text-muted small">{{ result.final_decision_notice }}</p>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="nd-card h-100">
+      <h3 class="h6">충족한 조건 <span class="text-muted">({{ result.conditions.passed|length }})</span></h3>
+      {% if result.conditions.passed %}
+        <ul class="cond-list">
+          {% for item in result.conditions.passed %}
+            <li class="cond-pass"><span class="cond-mark">✓</span><span>{{ item.label }}</span></li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted small mb-0">충족으로 확인된 조건이 없습니다.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="nd-card h-100">
+      <h3 class="h6">확인되지 않은 조건 <span class="text-muted">({{ result.conditions.unknown|length }})</span></h3>
+      {% if result.conditions.unknown %}
+        <ul class="cond-list">
+          {% for item in result.conditions.unknown %}
+            <li class="cond-unknown"><span class="cond-mark">?</span><span>{{ item.label }}</span></li>
+          {% endfor %}
+        </ul>
+        <p class="small text-muted mt-2 mb-0">자료를 추가로 올리면 이 항목이 채워집니다.</p>
+      {% else %}
+        <p class="text-muted small mb-0">추가로 확인할 조건이 없습니다.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if result.conditions.failed %}
+  <div class="col-12">
+    <div class="nd-card">
+      <h3 class="h6">충족하지 않은 조건 <span class="text-muted">({{ result.conditions.failed|length }})</span></h3>
+      <ul class="cond-list">
+        {% for item in result.conditions.failed %}
+          <li class="cond-fail"><span class="cond-mark">×</span><span>{{ item.label }}</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if result.analysis and result.analysis.missingEvidence %}
+<div class="nd-card">
+  <h3 class="h6">추가로 필요한 증빙 {{ source_badge(result.analysis_source, "ms-1") }}</h3>
+  <ul class="mb-0 small">
+    {% for item in result.analysis.missingEvidence %}<li>{{ item }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if result.analysis and result.analysis.timeline %}
+<div class="nd-card">
+  <h3 class="h6">자료로 확인된 시간 순서 {{ source_badge(result.analysis_source, "ms-1") }}</h3>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead><tr><th scope="col">날짜</th><th scope="col">내용</th><th scope="col">출처</th></tr></thead>
+      <tbody>
+        {% for row in result.analysis.timeline %}
+          <tr><td class="text-nowrap">{{ row.date }}</td><td>{{ row.event }}</td>
+              <td class="text-muted small">{{ row.source }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="nd-card">
+  <h3 class="h6">확인된 거래</h3>
+  <dl class="nd-kv mb-0">
+    <dt>가맹점</dt><dd>{{ case.merchant_name }}</dd>
+    <dt>결제금액</dt><dd>{{ "{:,}".format(case.amount) }}원 · {{ case.installment_months }}개월 할부</dd>
+    <dt>남은 할부금</dt><dd>{{ "{:,}".format(case.remaining_balance) }}원</dd>
+    <dt>가맹점 상태</dt><dd>{{ case.merchant_status_label or case.merchant_status }}</dd>
+    {% if case.situation_label %}<dt>선택한 상황</dt><dd>{{ case.situation_label }}</dd>{% endif %}
+  </dl>
+</div>
+
+<div class="nd-card border-warning">
+  <h3 class="h6">반드시 확인해 주세요</h3>
+  <ul class="mb-0 small text-muted">
+    {% for item in result.disclaimers %}<li>{{ item }}</li>{% endfor %}
+  </ul>
+</div>
+
+<div class="d-grid gap-2 d-sm-flex">
+  <a class="btn btn-primary btn-lg" href="{{ url_for('result.submission', case_id=case.case_id) }}"
+     data-loading="제출자료 초안을 준비하고 있습니다">제출자료 확인하기</a>
+  <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('evidence.index', case_id=case.case_id) }}">
+    자료 추가로 올리기
+  </a>
+</div>
+
+{{ nav_buttons(prev_url=url_for('result.case_confirm', case_id=case.case_id), prev_label="상황 확인",
+               next_url=url_for('result.submission', case_id=case.case_id), next_label="제출자료") }}
+
 {% else %}
-  <p class="text-muted">사례를 찾을 수 없습니다.</p>
+  <div class="nd-card text-center">
+    <h1 class="h4">사례를 찾을 수 없습니다</h1>
+    <p class="text-muted">주소의 사례번호를 확인하거나 거래 탐지 화면에서 다시 시작해 주세요.</p>
+    <a class="btn btn-primary" href="{{ url_for('detection.index') }}">거래 탐지로 이동</a>
+  </div>
 {% endif %}
 {% endblock %}

@@ -16,15 +16,24 @@ PowerShell에서 실행한다.
 
 ## 주요 화면
 
+전체 흐름은 아래 순서로 이어진다.
+
+- 서비스 소개: /
 - 거래 탐지: /detection/
-- 사례 상세: /detection/CASE-001
-- 증빙자료: /evidence/
-- 분석: /analysis/
-- 결과: /result/CASE-001
+- 카드사 앱 알림: /demo/card-app
+- 소비자 상황 확인: /case/CASE-001
+- 자료 입력: /evidence/
+- AI 분석: /analysis/
+- 결과: /case/CASE-001/result
+- 제출자료: /case/CASE-001/submission
 
-## A 담당 지침
+## 담당별 지침
 
-A의 구현 범위, 데이터 계약, API, 테스트 체크리스트는 docs/A_담당_구현지침.md에 정리되어 있다.
+- A(거래 탐지·규칙): docs/A_담당_구현지침.md
+- D(사용자 흐름·결과·배포): docs/D_담당_구현지침.md
+
+공통 레이아웃과 디자인 규칙은 templates/base.html, templates/_ui.html,
+static/css/style.css에 있다. 새 화면을 만들 때는 이 세 파일을 그대로 사용한다.
 
 ## 주의
 

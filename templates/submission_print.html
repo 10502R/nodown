@@ -1,0 +1,50 @@
+<!doctype html>
+{# 담당: D — 인쇄·PDF 저장 전용 화면. 공통 레이아웃을 쓰지 않고 문서 형태만 남긴다. #}
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ draft.title }} · {{ draft.case_id }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    body { background: #fff; }
+    .doc { max-width: 720px; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
+    .doc h1 { font-size: 1.5rem; margin-bottom: .25rem; }
+    .doc .meta { color: #6b7280; font-size: .88rem; margin-bottom: 1.5rem; }
+    .doc section { margin-bottom: 1.25rem; page-break-inside: avoid; }
+    .doc section h2 { font-size: 1.02rem; border-bottom: 1px solid #e3e6ea; padding-bottom: .3rem; margin-bottom: .5rem; }
+    .doc p { margin: 0; font-size: .95rem; }
+    .doc .notice { border: 1px solid #e3e6ea; border-radius: 8px; padding: .8rem 1rem; font-size: .85rem; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="doc">
+    <div class="no-print mb-3 d-flex gap-2">
+      <button class="btn btn-primary btn-sm" type="button" onclick="window.print()">인쇄 · PDF로 저장</button>
+      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('result.submission', case_id=draft.case_id) }}">돌아가기</a>
+    </div>
+
+    <h1>{{ draft.title }}</h1>
+    <p class="meta">사례번호 {{ draft.case_id }} · 작성일시 {{ draft.generated_at }}</p>
+
+    <div class="notice mb-4">
+      이 문서는 카드사 제출 준비용 초안입니다. 최종 인정 여부는 카드사가 심사하여 결정하며,
+      본 서비스는 접수나 결제취소를 대신 수행하지 않습니다. 시연용 합성데이터로 작성되었습니다.
+    </div>
+
+    {% for section in draft.sections %}
+      <section>
+        <h2>{{ section.heading }}</h2>
+        <p>{{ section.body }}</p>
+      </section>
+    {% endfor %}
+
+    {% if draft.attachments %}
+      <section>
+        <h2>첨부자료</h2>
+        <ul>{% for item in draft.attachments %}<li>{{ item }}</li>{% endfor %}</ul>
+      </section>
+    {% endif %}
+  </div>
+</body>
+</html>

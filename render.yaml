@@ -1,0 +1,22 @@
+# 담당: D — Render 배포 설정.
+# Render 대시보드에서 이 저장소를 연결하면 아래 설정으로 배포된다.
+# OPENAI_API_KEY, CLOVA_OCR_API_URL, CLOVA_OCR_SECRET_KEY는 대시보드의
+# Environment 탭에서 직접 등록한다. 저장소에는 키를 넣지 않는다.
+services:
+  - type: web
+    name: nodown
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.5"
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: CLOVA_OCR_API_URL
+        sync: false
+      - key: CLOVA_OCR_SECRET_KEY
+        sync: false

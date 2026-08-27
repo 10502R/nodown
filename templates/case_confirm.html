@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "_ui.html" import source_badge, nav_buttons %}
+
+{% block title %}소비자 상황 확인{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-0">지금 상황을 확인해 주세요</h1>
+  {{ source_badge(source) }}
+</div>
+
+<div class="nd-card">
+  <h3 class="h6 mb-3">확인된 거래</h3>
+  <dl class="nd-kv mb-0">
+    <dt>사례번호</dt><dd>{{ case.case_id }}</dd>
+    <dt>가맹점</dt><dd>{{ case.merchant_name }} <span class="text-muted fw-normal">({{ case.merchant_category }})</span></dd>
+    <dt>결제일</dt><dd>{{ case.purchase_date }}</dd>
+    <dt>결제금액</dt><dd>{{ "{:,}".format(case.amount) }}원 · {{ case.installment_months }}개월 할부</dd>
+    <dt>남은 할부금</dt><dd>{{ "{:,}".format(case.remaining_balance) }}원 ({{ case.remaining_installments }}회 남음)</dd>
+    <dt>가맹점 상태</dt>
+    <dd>
+      {{ case.merchant_status_label or case.merchant_status }}
+      {% if case.closed_date %}<span class="text-muted fw-normal">· {{ case.closed_date }}</span>{% endif %}
+    </dd>
+  </dl>
+</div>
+
+<form method="post" action="{{ url_for('result.choose_situation', case_id=case.case_id) }}"
+      data-loading="상황을 확인하고 있습니다">
+  <div class="nd-card">
+    <h3 class="h6 mb-3">해당하는 상황을 하나 골라 주세요</h3>
+    <div class="choice-list">
+      {% for choice in choices %}
+        <label class="choice-item {% if selected == choice.key %}selected{% endif %}">
+          <input type="radio" name="situation" value="{{ choice.key }}"
+                 {% if selected == choice.key %}checked{% endif %} required>
+          <span class="choice-label">{{ choice.label }}</span>
+          <p class="choice-hint mb-0">{{ choice.guidance }}</p>
+        </label>
+      {% endfor %}
+    </div>
+    <button class="btn btn-primary w-100 mt-3" type="submit">선택 완료</button>
+    <p class="small text-muted mt-2 mb-0">
+      선택한 내용은 브라우저 세션에만 저장되며 서버에 사례로 남지 않습니다.
+    </p>
+  </div>
+</form>
+
+{% if situation and situation.next == 'evidence' %}
+  <div class="nd-card">
+    <h3 class="h6">선택하신 상황</h3>
+    <p class="mb-2"><strong>{{ situation.label }}</strong></p>
+    <p class="small text-muted mb-3">{{ situation.guidance }}</p>
+    <a class="btn btn-primary" href="{{ url_for('evidence.index', case_id=case.case_id) }}"
+       data-loading="자료 입력 화면을 준비하고 있습니다">자료 입력으로 이동</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('result.case_result', case_id=case.case_id) }}">
+      먼저 예비 결과 보기
+    </a>
+  </div>
+{% endif %}
+
+{{ nav_buttons(prev_url=url_for('result.card_app'), prev_label="앱 알림",
+               next_url=url_for('result.case_result', case_id=case.case_id), next_label="결과 미리보기") }}
+{% endblock %}
