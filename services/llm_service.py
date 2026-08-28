@@ -54,13 +54,40 @@ def _load_fixture_result():
     }
 
 
-def analyze_case(case_id="CASE-001") -> dict:
+def _build_evidence_context(case, evidence):
+    """AI에 넘길 증빙 컨텍스트를 만든다.
+
+    evidence(B가 세션에 쌓은 문서 목록)가 있으면 C-1 형식
+    {"case", "documents", "extractedFields", "rawTexts"}으로 실제 자료를 조립한다.
+    없으면(해당 사례에 아직 B의 자료가 없으면) 기존처럼 정적 예시 입력을 쓴다.
+    """
+    if evidence:
+        try:
+            from services import ocr_service
+
+            ai_input = ocr_service.to_ai_input(evidence)
+        except Exception:
+            ai_input = {"documents": [], "extractedFields": {}, "rawTexts": []}
+        payload = {"case": case or {}, **ai_input}
+        return json.dumps(payload, ensure_ascii=False, indent=2)
+
+    input_path = os.path.join(DATA_DIR, "analysis_input.fixture.json")
+    if os.path.exists(input_path):
+        with open(input_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return ""
+
+
+def analyze_case(case_id="CASE-001", case=None, evidence=None) -> dict:
     """
     사례의 거래/이용 내역 및 증빙을 분석하여 C-2 8개 키 구조의 dict 반환.
     API 키 미설정 또는 오류 시 Fixture 목업을 안전하게 반환합니다.
+
+    case: A의 사례 정보(dict). evidence: B가 세션에 쌓은 증빙 문서 목록.
+    둘 다 없으면 정적 예시 입력으로 동작한다(하위 호환).
     """
     client = _get_client()
-    
+
     # 1. API 키가 없으면 목업 데이터 반환 (현재 개발 단계용)
     if client is None:
         return _load_fixture_result()
@@ -71,12 +98,7 @@ def analyze_case(case_id="CASE-001") -> dict:
         if not prompt_text:
             prompt_text = _load_prompt("analysis_prompt.txt")
 
-        # 입력 데이터 준비
-        input_path = os.path.join(DATA_DIR, "analysis_input.fixture.json")
-        evidence_context = ""
-        if os.path.exists(input_path):
-            with open(input_path, "r", encoding="utf-8") as f:
-                evidence_context = f.read()
+        evidence_context = _build_evidence_context(case, evidence)
 
         response = client.chat.completions.create(
             model="gpt-4o-mini",

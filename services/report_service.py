@@ -155,6 +155,37 @@ def apply_situation(case, situation_key):
     return merged
 
 
+def _evidence_display_name(document):
+    label = document.get("label") or "증빙자료"
+    filename = document.get("filename")
+    if filename and filename not in label:
+        return "{0} ({1})".format(label, filename)
+    return label
+
+
+def apply_evidence(case, documents):
+    """B가 모은 증빙자료를 사례에 반영한다(B→A 연동).
+
+    규칙 엔진의 '증빙자료 확보 여부' 조건이 실제 등록된 자료를 보도록
+    evidence_files를 채운다. 소비자가 상황 확인에서 이미 답한 값이 있으면
+    그 값을 우선하고, 비어 있을 때만 증빙에서 추출된 값으로 채운다.
+    """
+    if case is None or not documents:
+        return case
+
+    merged = deepcopy(case)
+    merged["evidence_files"] = [_evidence_display_name(doc) for doc in documents]
+
+    if merged.get("replacement_service_offered") is None:
+        for doc in documents:
+            value = (doc.get("fields") or {}).get("replacementServiceOffered")
+            if value is not None:
+                merged["replacement_service_offered"] = value
+                break
+
+    return merged
+
+
 # --- 규칙 판정 ----------------------------------------------------------
 
 def build_verdict(case):
@@ -309,13 +340,17 @@ def render_submission_text(draft):
 
 # --- 화면 데이터 조립 ---------------------------------------------------
 
-def build_result(case_id, situation_key=None, overrides=None):
-    """결과 화면 한 장에 필요한 값을 모두 모은다."""
+def build_result(case_id, situation_key=None, overrides=None, evidence=None):
+    """결과 화면 한 장에 필요한 값을 모두 모은다.
+
+    evidence는 B가 세션에 쌓은 증빙 문서 목록이다(routes/result.py가 전달).
+    """
     case, case_source = load_case(case_id)
     if case is None:
         return None
 
     case = apply_situation(case, situation_key) or case
+    case = apply_evidence(case, evidence) or case
     verdict, verdict_source = build_verdict(case)
     analysis, analysis_source = build_analysis(case_id)
     draft = build_submission_draft(
@@ -339,10 +374,12 @@ def build_result(case_id, situation_key=None, overrides=None):
     }
 
 
-def build_report_file(case_id, situation_key=None, overrides=None):
+def build_report_file(case_id, situation_key=None, overrides=None, evidence=None):
     """제출자료 초안을 파일로 저장하고 경로를 돌려준다."""
     os.makedirs(REPORTS_DIR, exist_ok=True)
-    result = build_result(case_id, situation_key=situation_key, overrides=overrides)
+    result = build_result(
+        case_id, situation_key=situation_key, overrides=overrides, evidence=evidence
+    )
     content = render_submission_text(result["draft"]) if result else ""
 
     file_path = os.path.join(REPORTS_DIR, "{0}_submission_draft.txt".format(case_id))
