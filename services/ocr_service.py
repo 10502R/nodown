@@ -4,16 +4,21 @@
 #
 # 주의: 텍스트에 명시되지 않은 값은 임의로 채우지 않고 None(미확인)으로 둔다.
 
+import mimetypes
 import os
 import re
 
 import requests
+from werkzeug.datastructures import FileStorage
 
 CLOVA_OCR_API_URL = os.environ.get("CLOVA_OCR_API_URL")
 CLOVA_OCR_SECRET_KEY = os.environ.get("CLOVA_OCR_SECRET_KEY")
 
 ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg"}
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10MB (B-2 파일 크기 확인)
+
+DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+SAMPLE_EVIDENCE_DIR = os.path.join(DATA_DIR, "sample_evidence")
 
 # 화면 배지에 쓰는 출처 라벨. templates/_ui.html의 source_badge가
 # "실제 OCR 결과"를 이미 badge-source-ocr 색상으로 매핑해 두었다.
@@ -43,9 +48,13 @@ FIELD_LABELS = {
 
 # B-1. 대표 시연에서 파일 없이 바로 고를 수 있는 합성 증빙자료.
 # CASE-001 합성 사례(계약금액 1,200,000원, 폐업일 2026-08-10)와 값을 맞췄다.
+# "file"은 data/sample_evidence/의 실제 이미지·PDF 파일명이다. "text"는 그 파일에
+# 적힌 내용과 동일한 정답 텍스트로, CLOVA 키가 없어 실제 OCR을 못 돌릴 때만
+# 대신 사용한다(임의 추정이 아니라 우리가 직접 만든 파일의 알려진 내용이기 때문).
 SAMPLE_DOCUMENTS = {
     "contract": {
         "label": "이용계약서",
+        "file": "contract.pdf",
         "text": (
             "헬스장 이용계약서\n\n"
             "계약일: 2026.03.02\n"
@@ -57,6 +66,7 @@ SAMPLE_DOCUMENTS = {
     },
     "refund_sms": {
         "label": "환불 요청 문자",
+        "file": "refund_sms.png",
         "text": (
             "[문자 대화]\n"
             "소비자: 헬스장이 문을 닫아서 더 이상 이용을 못 하고 있어요. 환불 요청드립니다.\n"
@@ -66,6 +76,7 @@ SAMPLE_DOCUMENTS = {
     },
     "closure_notice": {
         "label": "서비스 중단 안내문",
+        "file": "closure_notice.png",
         "text": (
             "서비스 중단 안내\n\n"
             "시설 사정으로 2026.08.10부로 서비스를 중단합니다.\n"
@@ -75,6 +86,31 @@ SAMPLE_DOCUMENTS = {
         ),
     },
 }
+
+
+def sample_file_path(key):
+    """예시문서의 실제 파일 경로를 돌려준다. 없으면 None."""
+    doc = SAMPLE_DOCUMENTS.get(key)
+    if doc is None:
+        return None
+    path = os.path.join(SAMPLE_EVIDENCE_DIR, doc["file"])
+    return path if os.path.exists(path) else None
+
+
+def open_sample_file_storage(key):
+    """예시문서 파일을 실제 업로드와 동일한 FileStorage 형태로 연다(B-3 경로 재사용).
+
+    호출자가 다 쓴 뒤 닫아야 한다.
+    """
+    path = sample_file_path(key)
+    if path is None:
+        return None
+    content_type, _ = mimetypes.guess_type(path)
+    return FileStorage(
+        stream=open(path, "rb"),
+        filename=os.path.basename(path),
+        content_type=content_type or "application/octet-stream",
+    )
 
 _DATE = r"([0-9]{4})[.\-/]([0-9]{1,2})[.\-/]([0-9]{1,2})"
 

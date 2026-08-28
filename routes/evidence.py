@@ -8,7 +8,16 @@
 
 import os
 
-from flask import Blueprint, redirect, render_template, request, session, url_for
+from flask import (
+    Blueprint,
+    abort,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    session,
+    url_for,
+)
 
 from services import ocr_service
 
@@ -85,7 +94,7 @@ def index(case_id=DEFAULT_CASE_ID):
 
     if any(doc.get("ocr_status") == "ok" for doc in documents):
         source = ocr_service.SOURCE_OCR
-    elif documents:
+    elif any(doc.get("source_type") in ("upload", "manual") for doc in documents):
         source = ocr_service.SOURCE_USER_INPUT
     else:
         source = ocr_service.SOURCE_FIXTURE
@@ -173,16 +182,45 @@ def manual(case_id=DEFAULT_CASE_ID):
 @evidence_bp.route("/sample", methods=["POST"])
 @evidence_bp.route("/<case_id>/sample", methods=["POST"])
 def sample(case_id=DEFAULT_CASE_ID):
+    """예시문서를 실제 파일 업로드와 같은 경로(OCR 호출)로 등록한다(B-1, B-3).
+
+    CLOVA 키가 설정돼 있으면 실제로 그 파일을 OCR에 태운다. 키가 없거나 실패하면
+    우리가 직접 만든 파일의 알려진 내용으로 대신한다 — 다른 사용자의 업로드에
+    임의로 값을 채우는 것과 달리, 이 파일의 실제 내용을 우리가 알고 있기 때문이다.
+    """
     key = request.form.get("sample_key")
     sample_doc = ocr_service.SAMPLE_DOCUMENTS.get(key)
     if sample_doc is None:
         return redirect(url_for("evidence.index", case_id=case_id, error="선택한 예시문서를 찾을 수 없습니다."))
 
+    file_storage = ocr_service.open_sample_file_storage(key)
+    status = "not_configured"
+    text = None
+    if file_storage is not None:
+        try:
+            text, status = ocr_service.extract_text(file_storage)
+        finally:
+            file_storage.close()
+
+    if status != "ok":
+        text, status = sample_doc["text"], "sample"
+
     _add_document(
-        case_id, label=sample_doc["label"], source_type="sample", filename=None,
-        ocr_status="manual", raw_text=sample_doc["text"],
+        case_id, label=sample_doc["label"], source_type="sample",
+        filename=sample_doc.get("file"), ocr_status=status, raw_text=text,
     )
     return redirect(url_for("evidence.index", case_id=case_id, added=1))
+
+
+@evidence_bp.route("/sample/<key>/download")
+def download_sample(key):
+    """예시문서 원본 파일을 내려받는다. 파일 업로드 경로를 직접 테스트할 때 씀."""
+    path = ocr_service.sample_file_path(key)
+    if path is None:
+        abort(404)
+    return send_from_directory(
+        ocr_service.SAMPLE_EVIDENCE_DIR, os.path.basename(path), as_attachment=True
+    )
 
 
 @evidence_bp.route("/<case_id>/delete/<int:doc_id>", methods=["POST"])

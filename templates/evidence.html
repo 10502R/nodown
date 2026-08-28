@@ -42,11 +42,19 @@
       <h3 class="h6 mb-2">1. 예시문서 선택</h3>
       <p class="small text-muted">직접 자료가 없다면 시연용 합성문서를 바로 등록할 수 있습니다.</p>
       {% for key, doc in sample_documents.items() %}
-        <form method="post" action="{{ url_for('evidence.sample', case_id=case_id) }}" class="mb-2">
-          <input type="hidden" name="sample_key" value="{{ key }}">
-          <button type="submit" class="btn btn-outline-secondary btn-sm w-100">{{ doc.label }} 불러오기</button>
-        </form>
+        <div class="d-flex gap-1 mb-2">
+          <form method="post" action="{{ url_for('evidence.sample', case_id=case_id) }}" class="flex-grow-1">
+            <input type="hidden" name="sample_key" value="{{ key }}">
+            <button type="submit" class="btn btn-outline-secondary btn-sm w-100">{{ doc.label }} 불러오기</button>
+          </form>
+          <a class="btn btn-outline-secondary btn-sm" title="원본 파일({{ doc.file }}) 내려받기"
+             href="{{ url_for('evidence.download_sample', key=key) }}">⬇</a>
+        </div>
       {% endfor %}
+      <p class="small text-muted mb-0">
+        "불러오기"는 이 파일을 실제 업로드·OCR 경로로 바로 등록합니다. 파일을 직접 받아
+        위 업로드 폼으로 다시 올려 테스트할 수도 있습니다.
+      </p>
     </div>
   </div>
 
@@ -107,6 +115,7 @@
                 {% if doc.ocr_status == 'ok' %}OCR 인식 완료
                 {% elif doc.ocr_status == 'failed' %}OCR 인식 실패 · 원문 미확보
                 {% elif doc.ocr_status == 'not_configured' %}OCR 미설정 · 원문 미확보
+                {% elif doc.ocr_status == 'sample' %}예시문서 · 알려진 내용 사용(OCR 미실행)
                 {% else %}직접 입력{% endif %}
               </div>
             </div>
