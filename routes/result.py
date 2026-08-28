@@ -33,6 +33,11 @@ def _overrides(case_id):
     return session.get("draft:{0}".format(case_id))
 
 
+def _evidence_documents(case_id):
+    """B가 자료 입력 화면에서 세션에 쌓은 증빙 문서 목록을 읽는다(B→A 연동)."""
+    return session.get("evidence:{0}".format(case_id))
+
+
 # --- 카드사 앱 알림 시뮬레이션(D-3) -------------------------------------
 
 @result_bp.route("/demo/card-app")
@@ -96,6 +101,7 @@ def case_result(case_id):
         case_id,
         situation_key=_situation_key(case_id),
         overrides=_overrides(case_id),
+        evidence=_evidence_documents(case_id),
     )
     if result is None:
         abort(404)
@@ -110,6 +116,7 @@ def submission(case_id):
         case_id,
         situation_key=_situation_key(case_id),
         overrides=_overrides(case_id),
+        evidence=_evidence_documents(case_id),
     )
     if result is None:
         abort(404)
@@ -146,6 +153,7 @@ def download(case_id):
         case_id,
         situation_key=_situation_key(case_id),
         overrides=_overrides(case_id),
+        evidence=_evidence_documents(case_id),
     )
     return send_file(
         file_path,
@@ -162,6 +170,7 @@ def print_view(case_id):
         case_id,
         situation_key=_situation_key(case_id),
         overrides=_overrides(case_id),
+        evidence=_evidence_documents(case_id),
     )
     if result is None:
         abort(404)
@@ -185,6 +194,7 @@ def demo_start():
     """소개 화면의 `대표 시나리오 시작` 버튼이 누르는 진입점이다."""
     session.pop("situation:{0}".format(DEFAULT_CASE_ID), None)
     session.pop("draft:{0}".format(DEFAULT_CASE_ID), None)
+    session.pop("evidence:{0}".format(DEFAULT_CASE_ID), None)
     return redirect(url_for("result.card_app"))
 
 
