@@ -62,21 +62,6 @@ def _add_document(case_id, *, label, source_type, filename, ocr_status, raw_text
     _save_documents(case_id, documents)
 
 
-def _aggregate(documents):
-    """여러 문서의 핵심 항목을 하나로 합치고, 항목별 출처 문서를 남긴다(B-5).
-
-    먼저 등록된 문서의 값을 우선하며, 값이 없을 때만 뒤 문서로 채운다.
-    """
-    fields = {key: None for key in ocr_service.FIELD_KEYS}
-    field_sources = {}
-    for doc in documents:
-        for key, value in (doc.get("fields") or {}).items():
-            if value is not None and fields.get(key) is None:
-                fields[key] = value
-                field_sources[key] = doc.get("label")
-    return fields, field_sources
-
-
 def _load_case(case_id):
     try:
         from services import case_service
@@ -90,7 +75,7 @@ def _load_case(case_id):
 @evidence_bp.route("/<case_id>", methods=["GET"])
 def index(case_id=DEFAULT_CASE_ID):
     documents = _documents(case_id)
-    fields, field_sources = _aggregate(documents)
+    fields, field_sources = ocr_service.aggregate_fields(documents)
 
     if any(doc.get("ocr_status") == "ok" for doc in documents):
         source = ocr_service.SOURCE_OCR

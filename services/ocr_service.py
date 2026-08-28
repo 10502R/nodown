@@ -197,3 +197,61 @@ def extract_fields(text):
         fields["replacementServiceOffered"] = replacement_match.group(1) in {"제공", "있음"}
 
     return fields
+
+
+def aggregate_fields(documents):
+    """여러 문서의 핵심 항목을 하나로 합치고, 항목별 출처 문서를 남긴다(B-5).
+
+    먼저 등록된 문서의 값을 우선하며, 값이 없을 때만 뒤 문서로 채운다.
+    """
+    fields = {key: None for key in FIELD_KEYS}
+    field_sources = {}
+    for doc in documents or []:
+        for key, value in (doc.get("fields") or {}).items():
+            if value is not None and fields.get(key) is None:
+                fields[key] = value
+                field_sources[key] = doc.get("label")
+    return fields, field_sources
+
+
+_DOCUMENT_TYPE_HINTS = (
+    ("계약", "contract"),
+    ("문자", "sms"),
+    ("메시지", "sms"),
+    ("안내", "notice"),
+    ("공지", "notice"),
+)
+
+
+def _guess_document_type(label):
+    label = label or ""
+    for keyword, doc_type in _DOCUMENT_TYPE_HINTS:
+        if keyword in label:
+            return doc_type
+    return "other"
+
+
+def to_ai_input(documents):
+    """B의 세션 문서 목록을 C-1 AI 입력 형식으로 바꾼다(B→C 연동).
+
+    반환값은 {"documents": [...], "extractedFields": {...}, "rawTexts": [...]}이며,
+    호출자가 "case"를 더해 최종 C-1 페이로드를 완성한다.
+    """
+    fields, _ = aggregate_fields(documents)
+    ai_documents = [
+        {
+            "documentId": "DOC-{0:03d}".format(doc.get("id") or index + 1),
+            "type": _guess_document_type(doc.get("label")),
+            "label": doc.get("label"),
+            "fileName": doc.get("filename"),
+            "isSynthetic": doc.get("source_type") == "sample",
+        }
+        for index, doc in enumerate(documents or [])
+    ]
+    raw_texts = [doc["raw_text"] for doc in (documents or []) if doc.get("raw_text")]
+
+    return {
+        "documents": ai_documents,
+        "extractedFields": fields,
+        "rawTexts": raw_texts,
+    }
