@@ -176,4 +176,4 @@ evidence 스키마: contract_date, contract_amount, service_period,
                  refund_request_date, service_stop_date, alternative_service_offered
 ```
 
-다음 담당자(C)는 B의 evidence 필드명을 임의로 바꾸지 않는다. 변경이 필요하면 팀에 알린다.
+다음 담당자(C)는 B의 evidence 필드명을 임의로 바꾸지 않는다. 변경이 필요하면 팀에 알린다

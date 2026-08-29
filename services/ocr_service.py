@@ -4,9 +4,13 @@
 #
 # 주의: 텍스트에 명시되지 않은 값은 임의로 채우지 않고 None(미확인)으로 둔다.
 
+import base64
+import json
 import mimetypes
 import os
 import re
+import time
+import uuid
 
 import requests
 from werkzeug.datastructures import FileStorage
@@ -134,14 +138,38 @@ def allowed_file(filename):
 
 
 def _text_from_clova_response(payload):
-    """CLOVA 일반 OCR 응답(images[].fields[].inferText)에서 줄 단위 텍스트를 만든다."""
+    """CLOVA 일반 OCR 응답(images[].fields[].inferText)에서 사람이 읽기 좋은 텍스트를 만든다.
+
+    CLOVA는 단어·구절 단위로 인식 결과를 쪼개서 돌려주므로, 같은 줄에 속한
+    조각(lineBreak=False)은 띄어쓰기로 이어붙이고 줄이 끝나는 조각
+    (lineBreak=True) 뒤에서만 줄을 바꾼다. 개별 이미지의 인식이 실패한 경우
+    (inferResult != "SUCCESS")는 건너뛴다.
+    """
     lines = []
     for image in payload.get("images") or []:
+        if image.get("inferResult") not in (None, "SUCCESS"):
+            continue
+        current_line = []
         for field in image.get("fields") or []:
             value = field.get("inferText")
-            if value:
-                lines.append(value)
+            if not value:
+                continue
+            current_line.append(value)
+            if field.get("lineBreak", True):
+                lines.append(" ".join(current_line))
+                current_line = []
+        if current_line:
+            lines.append(" ".join(current_line))
     return "\n".join(lines)
+
+
+_CLOVA_FORMAT_ALIASES = {"jpeg": "jpg"}
+
+
+def _clova_image_format(filename):
+    """CLOVA가 요구하는 images[].format 값으로 확장자를 정규화한다."""
+    ext = filename.rsplit(".", 1)[1].lower() if filename and "." in filename else ""
+    return _CLOVA_FORMAT_ALIASES.get(ext, ext or "jpg")
 
 
 def extract_text(file_storage):
@@ -150,21 +178,37 @@ def extract_text(file_storage):
     file_storage: Flask request.files의 FileStorage 객체
     반환: (텍스트 또는 None, 상태)
       상태는 "ok" | "not_configured"(API 키 미설정) | "failed"(호출·인식 실패) 중 하나.
+
+    이미지를 base64로 인코딩해 JSON 본문으로 Invoke URL에 POST하고, 헤더에
+    X-OCR-SECRET을 실어 보낸다. 응답 JSON은 그대로 파싱해 텍스트만 뽑아 쓴다.
     """
     if not CLOVA_OCR_API_URL or not CLOVA_OCR_SECRET_KEY:
         return None, "not_configured"
 
-    files = {"file": (file_storage.filename, file_storage.stream, file_storage.mimetype)}
-    headers = {"X-OCR-SECRET": CLOVA_OCR_SECRET_KEY}
+    file_storage.stream.seek(0)
+    encoded_image = base64.b64encode(file_storage.stream.read()).decode("ascii")
+
+    payload = {
+        "version": "V2",
+        "requestId": str(uuid.uuid4()),
+        "timestamp": int(time.time() * 1000),
+        "lang": "ko",
+        "images": [{
+            "format": _clova_image_format(file_storage.filename),
+            "name": "evidence",
+            "data": encoded_image,
+        }],
+    }
+    headers = {"X-OCR-SECRET": CLOVA_OCR_SECRET_KEY, "Content-Type": "application/json"}
 
     try:
-        response = requests.post(CLOVA_OCR_API_URL, headers=headers, files=files, timeout=30)
+        response = requests.post(CLOVA_OCR_API_URL, headers=headers, json=payload, timeout=30)
         response.raise_for_status()
-        payload = response.json()
+        result = response.json()
     except (requests.RequestException, ValueError):
         return None, "failed"
 
-    text = _text_from_clova_response(payload)
+    text = _text_from_clova_response(result)
     if not text:
         return None, "failed"
     return text, "ok"
