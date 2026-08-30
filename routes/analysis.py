@@ -63,17 +63,14 @@ def index(case_id="CASE-001"):
 
 @analysis_bp.route("/run", methods=["POST"])
 def run():
-    """사례 ID 재조회 및 재분석 실행 엔드포인트"""
-    case_id = request.form.get("case_id", "CASE-001")
-    analysis_data, case = _run_analysis(case_id)
+    """사례 ID 재조회 및 재분석 실행 엔드포인트.
 
-    return render_template(
-        "analysis.html",
-        analysis_result=analysis_data,
-        case=case,
-        active_step=5,
-        saved_answers=_saved_followup_answers(case_id)
-    )
+    render_template 대신 redirect한다. 그래야 주소가 /analysis/run에 남지 않고,
+    analysis.index(case_id)가 같은 case_id로 세션 증빙·저장된 답변을 다시 읽어서
+    "다시 분석 실행"과 7번 섹션에서 저장한 답변이 실제로 반영된다.
+    """
+    case_id = request.form.get("case_id", "CASE-001")
+    return redirect(url_for("analysis.index", case_id=case_id))
 
 
 @analysis_bp.route("/<case_id>/followup-answers", methods=["POST"])
