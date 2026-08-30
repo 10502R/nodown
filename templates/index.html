@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% from "_ui.html" import source_badge %}
 
 {% block title %}서비스 소개{% endblock %}
 
@@ -52,22 +51,11 @@
 
 <section class="nd-card">
   <h3>시연 안내</h3>
-  <ul class="small text-muted mb-3">
+  <ul class="small text-muted mb-0">
     <li>화면에 나오는 카드거래, 계약서, 문자는 모두 시연용 <strong>합성데이터</strong>입니다.</li>
     <li>가맹점 상태조회는 실제 국세청 API를 호출하지 않고 <strong>API 명세를 따른 합성 응답</strong>을 사용합니다.</li>
     <li>OCR·AI 호출이 실패해도 화면이 멈추지 않도록 <strong>예비 데이터</strong>로 동작합니다.</li>
     <li>실제 카드사 접수나 결제취소는 수행하지 않습니다.</li>
   </ul>
-  <div class="d-flex flex-wrap gap-2">
-    {{ source_badge("합성 카드거래") }}
-    {{ source_badge("API 명세 기반 합성 응답") }}
-    {{ source_badge("실제 OCR 결과") }}
-    {{ source_badge("실제 AI 분석 결과") }}
-    {{ source_badge("규칙 엔진 판정") }}
-    {{ source_badge("예비 데이터") }}
-  </div>
-  <p class="small text-muted mt-3 mb-0">
-    각 화면 위쪽에 위와 같은 배지를 표시해, 어떤 값이 실제 기능의 결과이고 어떤 값이 시연용 데이터인지 구분할 수 있게 했습니다.
-  </p>
 </section>
 {% endblock %}

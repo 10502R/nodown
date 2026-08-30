@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_ui.html" import source_badge, nav_buttons %}
+{% from "_ui.html" import nav_buttons %}
 
 {% block title %}제출자료 확인{% endblock %}
 
@@ -8,7 +8,6 @@
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
   <h1 class="h3 mb-0">제출자료 초안 · {{ case.case_id }}</h1>
-  {{ source_badge(draft.source) }}
 </div>
 
 {% if request.args.get('saved') %}
