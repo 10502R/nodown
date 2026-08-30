@@ -1,23 +1,51 @@
 {% extends "base.html" %}
+{% from "_ui.html" import source_badge, nav_buttons %}
 
 {% block title %}AI 증빙 분석 결과 리포트{% endblock %}
 
 {% block content %}
+{% set res = analysis_result if analysis_result is defined else (analysis if analysis is mapping else {}) %}
+{% set saved_answers = saved_answers if saved_answers is defined else None %}
+{% set source_label = "실제 AI 분석 결과" if res.get('_source') == 'ai' else "예비 데이터" %}
 <style>
   .card { border-radius: 0.75rem; border: 1px solid #e9ecef; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem; }
   .card-header { background-color: #ffffff; border-bottom: 1px solid #f1f3f5; font-weight: 600; padding: 1rem 1.25rem; }
   .timeline-item { position: relative; padding-left: 2rem; border-left: 2px solid #dee2e6; margin-bottom: 1.25rem; }
   .timeline-item::before { content: ""; position: absolute; left: -0.45rem; top: 0.25rem; width: 0.8rem; height: 0.8rem; border-radius: 50%; background-color: #0d6efd; }
   .summary-box { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.5rem; padding: 1.25rem; white-space: pre-wrap; line-height: 1.6; font-size: 0.95rem; }
+
+  /* 상단 요약 바 */
+  .analysis-summary-bar { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 0.75rem; padding: 0.9rem 1.1rem; margin-bottom: 1.25rem; }
+  .analysis-summary-bar .badge { font-size: 0.85rem; padding: 0.5rem 0.75rem; }
+
+  /* 아코디언 (세로 스크롤 구조) */
+  #analysisAccordion .accordion-item { border-radius: 0.75rem; border: 1px solid #e9ecef; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.04); margin-bottom: 1rem; overflow: hidden; }
+  #analysisAccordion .accordion-button { font-weight: 600; padding: 1rem 1.25rem; }
+  #analysisAccordion .accordion-button:focus { box-shadow: none; }
+  #analysisAccordion .accordion-body { padding: 1.25rem; }
+
+  /* 7. 추가 확인 질문 - 예/아니오/모르겠음 카드 */
+  .followup-answer-options { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+  .followup-answer-options label { display: inline-flex; align-items: center; gap: .35rem; border: 1px solid var(--nd-border, #dee2e6); border-radius: 999px; padding: .35rem .85rem; font-size: .85rem; cursor: pointer; background: #fff; }
+  .followup-answer-options input { margin: 0; }
+
+  /* 하단 sticky 바로가기 버튼 */
+  .followup-sticky-bar { position: sticky; bottom: 0; left: 0; right: 0; z-index: 20; background: #fff; border-top: 1px solid #e9ecef; padding: 0.75rem 1rem; margin: 1.5rem -0.01px 1rem; box-shadow: 0 -0.25rem 0.5rem rgba(0, 0, 0, 0.05); }
+
+  @media print {
+    .accordion-collapse { display: block !important; }
+    .followup-sticky-bar { position: static; }
+  }
 </style>
 
 <!-- 상단 헤더 섹션 -->
-<div class="d-flex flex-wrap justify-content-between align-items-center pb-3 mb-4 border-bottom">
+<div class="d-flex flex-wrap justify-content-between align-items-center pb-3 mb-3 border-bottom">
   <div>
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
       <h2 class="h4 mb-0 fw-bold">거래/이용 내역 및 증빙 AI 정밀 분석</h2>
       <span class="badge bg-secondary">{% if case %}{{ case.case_id }}{% else %}CASE-001{% endif %}</span>
       <span class="badge bg-warning text-dark"><i class="bi bi-shield-exclamation me-1"></i>시연용 합성 데이터</span>
+      {{ source_badge(source_label) }}
     </div>
     <p class="text-muted small mb-0 mt-1">가맹점: <strong>{% if case %}{{ case.merchant_name }}{% else %}올데이 피트니스{% endif %}</strong> | 제출된 증빙 문서와 추출 데이터를 대조 분석한 결과입니다.</p>
   </div>
@@ -26,8 +54,30 @@
   </div>
 </div>
 
-<!-- 사례 ID 입력/실행 폼 (필요시 접어서 사용 가능) -->
-<form method="post" action="{{ url_for('analysis.run') if 'analysis.run' in url_for.__globals__.get('current_app', {}).view_functions else '#' }}" class="card p-3 mb-4 bg-light">
+{# 상단 요약 바: 모순 / 부족한 증빙 / 확인 질문 수를 한 줄로 파악 #}
+{% set contradiction_list = res.contradictions or [] %}
+{% set has_no_contradiction = (contradiction_list|length == 0) or (contradiction_list|length == 1 and '없음' in contradiction_list[0]) %}
+{% set contradiction_count = 0 if has_no_contradiction else contradiction_list|length %}
+{% set missing_count = res.missingEvidence|length if res.missingEvidence else 0 %}
+{% set followup_count = res.followUpQuestions|length if res.followUpQuestions else 0 %}
+
+<div class="analysis-summary-bar d-flex flex-wrap align-items-center justify-content-between gap-2">
+  <div class="d-flex flex-wrap gap-2">
+    {% if has_no_contradiction %}
+      <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="bi bi-shield-check me-1"></i>모순 없음</span>
+    {% else %}
+      <span class="badge bg-danger"><i class="bi bi-exclamation-triangle me-1"></i>모순 {{ contradiction_count }}건</span>
+    {% endif %}
+    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle"><i class="bi bi-paperclip me-1"></i>부족한 증빙 {{ missing_count }}건</span>
+    <span class="badge bg-primary-subtle text-primary border border-primary-subtle"><i class="bi bi-patch-question me-1"></i>확인 질문 {{ followup_count }}건</span>
+  </div>
+  <button type="button" class="btn btn-sm btn-outline-secondary" id="toggleAllAccordionBtn" onclick="toggleAllAccordion()">
+    <i class="bi bi-arrows-expand me-1"></i>전체 펼치기
+  </button>
+</div>
+
+<!-- 사례 ID 입력/실행 폼 -->
+<form method="post" action="{{ url_for('analysis.run') }}" class="nd-card mb-4">
   <div class="row align-items-end g-2">
     <div class="col-md-9">
       <label class="form-label small fw-semibold" for="case_id">사례 ID 재조회</label>
@@ -39,18 +89,18 @@
   </div>
 </form>
 
-{% set res = analysis_result if analysis_result is defined else (analysis if analysis is mapping else {}) %}
+<!-- 세로 스크롤 아코디언: 8개 섹션을 위에서부터 순서대로 -->
+<div class="accordion" id="analysisAccordion">
 
-<div class="row">
-  <!-- 왼쪽 컬럼 (타임라인, 확인된 사실, 소비자 주장, 모순점) -->
-  <div class="col-lg-6">
-    
-    <!-- 1. 사건 타임라인 -->
-    <div class="card">
-      <div class="card-header d-flex align-items-center text-primary">
+  <!-- 1. 사건 타임라인 -->
+  <div class="accordion-item" id="accordion-item-1">
+    <h2 class="accordion-header">
+      <button class="accordion-button collapsed text-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1" aria-expanded="false" aria-controls="collapse1">
         <i class="bi bi-calendar-event me-2"></i> 1. 사건 일자별 타임라인
-      </div>
-      <div class="card-body pb-1">
+      </button>
+    </h2>
+    <div id="collapse1" class="accordion-collapse collapse" data-bs-parent="#analysisAccordion">
+      <div class="accordion-body">
         {% if res.timeline %}
           <div class="timeline ps-2">
             {% for item in res.timeline %}
@@ -62,17 +112,21 @@
             {% endfor %}
           </div>
         {% else %}
-          <p class="text-muted small mb-2">타임라인 정보가 없습니다.</p>
+          <p class="text-muted small mb-0">타임라인 정보가 없습니다.</p>
         {% endif %}
       </div>
     </div>
+  </div>
 
-    <!-- 2. 확인된 객관적 사실 -->
-    <div class="card">
-      <div class="card-header d-flex align-items-center text-success">
+  <!-- 2. 확인된 객관적 사실 -->
+  <div class="accordion-item" id="accordion-item-2">
+    <h2 class="accordion-header">
+      <button class="accordion-button collapsed text-success" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2" aria-expanded="false" aria-controls="collapse2">
         <i class="bi bi-check-circle me-2"></i> 2. 확인된 사실 (증빙 기반)
-      </div>
-      <div class="card-body">
+      </button>
+    </h2>
+    <div id="collapse2" class="accordion-collapse collapse" data-bs-parent="#analysisAccordion">
+      <div class="accordion-body">
         <ul class="list-group list-group-flush">
           {% for fact in res.confirmedFacts %}
           <li class="list-group-item px-0 py-2 border-0 d-flex align-items-start">
@@ -85,13 +139,17 @@
         </ul>
       </div>
     </div>
+  </div>
 
-    <!-- 3. 소비자 주장 -->
-    <div class="card">
-      <div class="card-header d-flex align-items-center text-info-emphasis">
+  <!-- 3. 소비자 주장 -->
+  <div class="accordion-item" id="accordion-item-3">
+    <h2 class="accordion-header">
+      <button class="accordion-button collapsed text-info-emphasis" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3" aria-expanded="false" aria-controls="collapse3">
         <i class="bi bi-chat-quote me-2"></i> 3. 소비자 주장 및 진술
-      </div>
-      <div class="card-body">
+      </button>
+    </h2>
+    <div id="collapse3" class="accordion-collapse collapse" data-bs-parent="#analysisAccordion">
+      <div class="accordion-body">
         {% for claim in res.userClaims %}
         <div class="p-2 mb-2 bg-light border-start border-3 border-info rounded-end small text-secondary">
           "{{ claim }}"
@@ -101,13 +159,40 @@
         {% endfor %}
       </div>
     </div>
+  </div>
 
-    <!-- 5. 자료 간 모순점 -->
-    <div class="card">
-      <div class="card-header d-flex align-items-center text-danger">
-        <i class="bi bi-exclamation-triangle me-2"></i> 5. 자료 간 모순점 검토
+  <!-- 4. 미확인 사항 -->
+  <div class="accordion-item" id="accordion-item-4">
+    <h2 class="accordion-header">
+      <button class="accordion-button collapsed text-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse4" aria-expanded="false" aria-controls="collapse4">
+        <i class="bi bi-question-circle me-2"></i> 4. 미확인 사항
+      </button>
+    </h2>
+    <div id="collapse4" class="accordion-collapse collapse" data-bs-parent="#analysisAccordion">
+      <div class="accordion-body">
+        <ul class="list-group list-group-flush">
+          {% for item in res.unresolvedItems %}
+          <li class="list-group-item px-0 py-2 border-0 d-flex align-items-start">
+            <i class="bi bi-dash text-secondary me-2 flex-shrink-0"></i>
+            <span class="text-muted small">{{ item }}</span>
+          </li>
+          {% else %}
+          <li class="list-group-item px-0 py-1 border-0 text-muted small">미확인 사항이 없습니다.</li>
+          {% endfor %}
+        </ul>
       </div>
-      <div class="card-body">
+    </div>
+  </div>
+
+  <!-- 5. 자료 간 모순점 (기본 펼침: 중요 정보) -->
+  <div class="accordion-item" id="accordion-item-5">
+    <h2 class="accordion-header">
+      <button class="accordion-button text-danger" type="button" data-bs-toggle="collapse" data-bs-target="#collapse5" aria-expanded="true" aria-controls="collapse5">
+        <i class="bi bi-exclamation-triangle me-2"></i> 5. 자료 간 모순점 검토
+      </button>
+    </h2>
+    <div id="collapse5" class="accordion-collapse collapse show" data-bs-parent="#analysisAccordion">
+      <div class="accordion-body">
         {% for contradiction in res.contradictions %}
           {% if "없음" in contradiction %}
             <div class="alert alert-success d-flex align-items-center mb-0 py-2 small" role="alert">
@@ -125,37 +210,17 @@
         {% endfor %}
       </div>
     </div>
-
   </div>
 
-  <!-- 오른쪽 컬럼 (미확인 사항, 부족한 증빙, 추가 확인 질문, 최종 제출 요약) -->
-  <div class="col-lg-6">
-
-    <!-- 4. 미확인 사항 -->
-    <div class="card">
-      <div class="card-header d-flex align-items-center text-secondary">
-        <i class="bi bi-question-circle me-2"></i> 4. 미확인 사항
-      </div>
-      <div class="card-body">
-        <ul class="list-group list-group-flush">
-          {% for item in res.unresolvedItems %}
-          <li class="list-group-item px-0 py-2 border-0 d-flex align-items-start">
-            <i class="bi bi-dash text-secondary me-2 flex-shrink-0"></i>
-            <span class="text-muted small">{{ item }}</span>
-          </li>
-          {% else %}
-          <li class="list-group-item px-0 py-1 border-0 text-muted small">미확인 사항이 없습니다.</li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-
-    <!-- 6. 부족한 증빙 (보완 권장 서류) -->
-    <div class="card">
-      <div class="card-header d-flex align-items-center text-warning-emphasis">
+  <!-- 6. 부족한 증빙 (기본 펼침: 중요 정보) -->
+  <div class="accordion-item" id="accordion-item-6">
+    <h2 class="accordion-header">
+      <button class="accordion-button text-warning-emphasis" type="button" data-bs-toggle="collapse" data-bs-target="#collapse6" aria-expanded="true" aria-controls="collapse6">
         <i class="bi bi-paperclip me-2"></i> 6. 부족한 증빙 (보완 권장)
-      </div>
-      <div class="card-body">
+      </button>
+    </h2>
+    <div id="collapse6" class="accordion-collapse collapse show" data-bs-parent="#analysisAccordion">
+      <div class="accordion-body">
         <ul class="list-group list-group-flush">
           {% for doc in res.missingEvidence %}
           <li class="list-group-item px-0 py-2 border-0 d-flex align-items-start">
@@ -168,49 +233,125 @@
         </ul>
       </div>
     </div>
+  </div>
 
-    <!-- 7. 소비자 추가 확인 질문 -->
-    <div class="card">
-      <div class="card-header d-flex align-items-center text-primary-emphasis">
+  <!-- 7. 소비자 추가 확인 질문 -->
+  <div class="accordion-item" id="accordion-item-7">
+    <h2 class="accordion-header">
+      <button class="accordion-button collapsed text-primary-emphasis" type="button" data-bs-toggle="collapse" data-bs-target="#collapse7" aria-expanded="false" aria-controls="collapse7">
         <i class="bi bi-patch-question me-2"></i> 7. 추가 확인 질문 (체크포인트)
-      </div>
-      <div class="card-body">
-        <ol class="list-group list-group-numbered list-group-flush">
-          {% for q in res.followUpQuestions %}
-          <li class="list-group-item px-0 py-2 border-0 d-flex align-items-start small text-secondary">
-            <span class="ms-2">{{ q }}</span>
-          </li>
-          {% else %}
-          <li class="list-group-item px-0 py-1 border-0 text-muted small">추가 질문 항목이 없습니다.</li>
-          {% endfor %}
-        </ol>
+      </button>
+    </h2>
+    <div id="collapse7" class="accordion-collapse collapse" data-bs-parent="#analysisAccordion">
+      <div class="accordion-body">
+        {% if request.args.get('saved') %}
+        <div class="alert alert-success d-flex align-items-center py-2 small mb-3" role="alert">
+          <i class="bi bi-check-circle me-2 flex-shrink-0"></i>
+          <div>답변이 저장되었습니다. 위의 "다시 분석 실행"을 누르면 분석 결과에 반영됩니다.</div>
+        </div>
+        {% endif %}
+        <form method="post" action="{{ url_for('analysis.save_followup_answers', case_id=case.case_id if case else 'CASE-001') }}">
+          <div class="choice-list mb-3">
+            {% for q in res.followUpQuestions %}
+            {% set saved_list = (saved_answers.answers if saved_answers else []) %}
+            {% set matched = saved_list | selectattr('question', 'equalto', q) | list %}
+            {% set current_answer = matched[0].answer if matched else None %}
+            <div class="choice-item" style="cursor: default;">
+              <p class="choice-label mb-0">{{ loop.index }}. {{ q }}</p>
+              <input type="hidden" name="followup_{{ loop.index }}_text" value="{{ q }}">
+              <div class="followup-answer-options" role="radiogroup" aria-label="{{ q }}">
+                <label>
+                  <input type="radio" name="followup_{{ loop.index }}" value="yes" {% if current_answer == 'yes' %}checked{% endif %}> 예
+                </label>
+                <label>
+                  <input type="radio" name="followup_{{ loop.index }}" value="no" {% if current_answer == 'no' %}checked{% endif %}> 아니오
+                </label>
+                <label>
+                  <input type="radio" name="followup_{{ loop.index }}" value="unknown" {% if current_answer == 'unknown' %}checked{% endif %}> 모르겠음
+                </label>
+              </div>
+            </div>
+            {% else %}
+            <p class="text-muted small mb-0">추가 질문 항목이 없습니다.</p>
+            {% endfor %}
+          </div>
+          {% if res.followUpQuestions %}
+          <label class="form-label small fw-semibold" for="followupExtraNote">추가로 설명하고 싶은 내용</label>
+          <textarea class="form-control" id="followupExtraNote" name="followup_extra_note" rows="3" placeholder="위 질문들과 관련해 추가로 설명하고 싶은 내용이 있다면 자유롭게 적어 주세요.">{{ saved_answers.extra_note if saved_answers else '' }}</textarea>
+          <button type="submit" class="btn btn-primary btn-sm mt-3"><i class="bi bi-save me-1"></i>답변 저장</button>
+          <p class="small text-muted mt-2 mb-0">저장한 답변과 설명은 소비자의 진술로만 취급되며, 다시 분석을 실행하면 분석 결과·제출자료에 참고 반영됩니다.</p>
+          {% endif %}
+        </form>
       </div>
     </div>
+  </div>
 
-    <!-- 8. 제출자료 초안 요약 -->
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center text-dark">
-        <span><i class="bi bi-file-text me-2"></i> 8. 카드사 제출용 요약 초안</span>
-        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="navigator.clipboard.writeText(document.getElementById('summaryText').innerText); alert('요약 초안이 복사되었습니다.');">
-          <i class="bi bi-copy me-1"></i>복사
-        </button>
-      </div>
-      <div class="card-body">
+  <!-- 8. 제출자료 초안 요약 -->
+  <div class="accordion-item" id="accordion-item-8">
+    <h2 class="accordion-header">
+      <button class="accordion-button collapsed text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#collapse8" aria-expanded="false" aria-controls="collapse8">
+        <i class="bi bi-file-text me-2"></i> 8. 카드사 제출용 요약 초안
+      </button>
+    </h2>
+    <div id="collapse8" class="accordion-collapse collapse" data-bs-parent="#analysisAccordion">
+      <div class="accordion-body">
+        <div class="d-flex justify-content-end mb-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="navigator.clipboard.writeText(document.getElementById('summaryText').innerText); alert('요약 초안이 복사되었습니다.');">
+            <i class="bi bi-copy me-1"></i>복사
+          </button>
+        </div>
         <div id="summaryText" class="summary-box">{% if res.submissionSummary %}{{ res.submissionSummary }}{% else %}요약 데이터가 없습니다.{% endif %}</div>
         <small class="text-muted mt-2 d-block">* 본 요약은 제출 참고용이며, 최종 항변권 수용 및 환불 여부는 카드사 심사를 거쳐 결정됩니다.</small>
       </div>
     </div>
-
   </div>
+
 </div>
 
-<!-- 하단 네비게이션 버튼 바 -->
-<div class="d-flex justify-content-between align-items-center pt-3 mt-4 border-top">
-  <a href="/case/CASE-001/evidence" class="btn btn-outline-secondary">
-    <i class="bi bi-arrow-left me-1"></i> 이전 (증빙 자료 수정)
-  </a>
-  <a href="/case/CASE-001/result" class="btn btn-primary px-4">
-    다음 (최종 서류 검토) <i class="bi bi-arrow-right ms-1"></i>
-  </a>
+<!-- 하단 확인 질문 바로가기 (sticky) -->
+<div class="followup-sticky-bar">
+  <button type="button" class="btn btn-primary w-100" onclick="goToFollowUpSection()">
+    <i class="bi bi-patch-question me-1"></i>확인이 필요한 질문 보기
+  </button>
 </div>
+
+<!-- 하단 네비게이션 (D 공통 nav_buttons) -->
+{{ nav_buttons(
+  prev_url=url_for('evidence.index', case_id=case.case_id) if case else url_for('evidence.index', case_id='CASE-001'),
+  prev_label="증빙 자료 수정",
+  next_url=url_for('result.case_result', case_id=case.case_id) if case else url_for('result.case_result', case_id='CASE-001'),
+  next_label="최종 서류 검토"
+) }}
+
+<script>
+  function toggleAllAccordion() {
+    var btn = document.getElementById('toggleAllAccordionBtn');
+    var collapses = document.querySelectorAll('#analysisAccordion .accordion-collapse');
+    var shouldExpand = btn.getAttribute('data-expanded') !== 'true';
+    collapses.forEach(function (el) {
+      var instance = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
+      if (shouldExpand) {
+        instance.show();
+      } else {
+        instance.hide();
+      }
+    });
+    btn.setAttribute('data-expanded', shouldExpand ? 'true' : 'false');
+    btn.innerHTML = shouldExpand
+      ? '<i class="bi bi-arrows-collapse me-1"></i>전체 접기'
+      : '<i class="bi bi-arrows-expand me-1"></i>전체 펼치기';
+  }
+
+  function goToFollowUpSection() {
+    var collapseEl = document.getElementById('collapse7');
+    var targetEl = document.getElementById('accordion-item-7');
+    if (collapseEl && !collapseEl.classList.contains('show')) {
+      var instance = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
+      instance.show();
+    }
+    if (targetEl) {
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+</script>
 {% endblock %}

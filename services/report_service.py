@@ -242,9 +242,23 @@ def build_analysis(case_id):
 
         analysis = llm_service.analyze_case(case_id)
         if analysis:
+            # [C 수정 전 원본 — report_service.py 원작성자 D] 아래 줄로 대체됨
             # llm_service는 키가 없으면 같은 예비 데이터를 반환하므로 값을 비교해
             # 실제 AI 결과인지 예비 결과인지 구분한다.
-            source = SOURCE_FIXTURE if analysis == fixture else SOURCE_AI
+            # source = SOURCE_FIXTURE if analysis == fixture else SOURCE_AI
+            #
+            # [C 추가] llm_service가 반환하는 _source 플래그로 출처를 판정한다.
+            # 폴백(fixture) 응답이 답변 병합(7번 "추가 확인 질문" 저장값 반영)으로
+            # fixture와 값이 달라져도 출처가 "실제 AI 분석 결과"로 잘못 표시되지
+            # 않도록 하기 위함이다. 아래 원본 비교식(analysis == fixture)은
+            # _source가 없는 이전 반환값과의 하위호환용으로만 남겨둔다.
+            source_flag = analysis.pop("_source", None)
+            if source_flag == "ai":
+                source = SOURCE_AI
+            elif source_flag == "fixture":
+                source = SOURCE_FIXTURE
+            else:
+                source = SOURCE_FIXTURE if analysis == fixture else SOURCE_AI
             return deepcopy(analysis), source
     except Exception:
         pass
