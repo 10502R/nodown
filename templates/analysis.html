@@ -50,6 +50,7 @@
 </div>
 
 {% set res = analysis_result if analysis_result is defined else (analysis if analysis is mapping else {}) %}
+{% set saved_answers = saved_answers if saved_answers is defined else None %}
 
 {# 상단 요약 바: 모순 / 부족한 증빙 / 확인 질문 수를 한 줄로 파악 #}
 {% set contradiction_list = res.contradictions or [] %}
@@ -241,31 +242,44 @@
     </h2>
     <div id="collapse7" class="accordion-collapse collapse" data-bs-parent="#analysisAccordion">
       <div class="accordion-body">
-        <div class="choice-list mb-3">
-          {% for q in res.followUpQuestions %}
-          <div class="choice-item" style="cursor: default;">
-            <p class="choice-label mb-0">{{ loop.index }}. {{ q }}</p>
-            <div class="followup-answer-options" role="radiogroup" aria-label="{{ q }}">
-              <label>
-                <input type="radio" name="followup_{{ loop.index }}" value="yes"> 예
-              </label>
-              <label>
-                <input type="radio" name="followup_{{ loop.index }}" value="no"> 아니오
-              </label>
-              <label>
-                <input type="radio" name="followup_{{ loop.index }}" value="unknown"> 모르겠음
-              </label>
-            </div>
-          </div>
-          {% else %}
-          <p class="text-muted small mb-0">추가 질문 항목이 없습니다.</p>
-          {% endfor %}
+        {% if request.args.get('saved') %}
+        <div class="alert alert-success d-flex align-items-center py-2 small mb-3" role="alert">
+          <i class="bi bi-check-circle me-2 flex-shrink-0"></i>
+          <div>답변이 저장되었습니다. 위의 "다시 분석 실행"을 누르면 분석 결과에 반영됩니다.</div>
         </div>
-        {% if res.followUpQuestions %}
-        <label class="form-label small fw-semibold" for="followupExtraNote">추가로 설명하고 싶은 내용</label>
-        <textarea class="form-control" id="followupExtraNote" name="followup_extra_note" rows="3" placeholder="위 질문들과 관련해 추가로 설명하고 싶은 내용이 있다면 자유롭게 적어 주세요."></textarea>
-        <p class="small text-muted mt-2 mb-0">* 이 답변은 현재 화면 구조 확인용이며, 실제 저장·제출 연동은 별도로 진행됩니다.</p>
         {% endif %}
+        <form method="post" action="{{ url_for('analysis.save_followup_answers', case_id=case.case_id if case else 'CASE-001') }}">
+          <div class="choice-list mb-3">
+            {% for q in res.followUpQuestions %}
+            {% set saved_list = (saved_answers.answers if saved_answers else []) %}
+            {% set matched = saved_list | selectattr('question', 'equalto', q) | list %}
+            {% set current_answer = matched[0].answer if matched else None %}
+            <div class="choice-item" style="cursor: default;">
+              <p class="choice-label mb-0">{{ loop.index }}. {{ q }}</p>
+              <input type="hidden" name="followup_{{ loop.index }}_text" value="{{ q }}">
+              <div class="followup-answer-options" role="radiogroup" aria-label="{{ q }}">
+                <label>
+                  <input type="radio" name="followup_{{ loop.index }}" value="yes" {% if current_answer == 'yes' %}checked{% endif %}> 예
+                </label>
+                <label>
+                  <input type="radio" name="followup_{{ loop.index }}" value="no" {% if current_answer == 'no' %}checked{% endif %}> 아니오
+                </label>
+                <label>
+                  <input type="radio" name="followup_{{ loop.index }}" value="unknown" {% if current_answer == 'unknown' %}checked{% endif %}> 모르겠음
+                </label>
+              </div>
+            </div>
+            {% else %}
+            <p class="text-muted small mb-0">추가 질문 항목이 없습니다.</p>
+            {% endfor %}
+          </div>
+          {% if res.followUpQuestions %}
+          <label class="form-label small fw-semibold" for="followupExtraNote">추가로 설명하고 싶은 내용</label>
+          <textarea class="form-control" id="followupExtraNote" name="followup_extra_note" rows="3" placeholder="위 질문들과 관련해 추가로 설명하고 싶은 내용이 있다면 자유롭게 적어 주세요.">{{ saved_answers.extra_note if saved_answers else '' }}</textarea>
+          <button type="submit" class="btn btn-primary btn-sm mt-3"><i class="bi bi-save me-1"></i>답변 저장</button>
+          <p class="small text-muted mt-2 mb-0">저장한 답변과 설명은 소비자의 진술로만 취급되며, 다시 분석을 실행하면 분석 결과·제출자료에 참고 반영됩니다.</p>
+          {% endif %}
+        </form>
       </div>
     </div>
   </div>

@@ -10,6 +10,12 @@
 [사례 정보]
 {case}
 
+[추가 확인 질문 응답 반영 지침]
+사례 정보에 followUpAnswers 필드(소비자가 7번 "추가 확인 질문"에 답한 예/아니오/모르겠음과 보충 설명 extra_note)가 있다면, 그 내용을 참고하여 unresolvedItems, missingEvidence, submissionSummary를 갱신하세요.
+- followUpAnswers의 답변은 객관적 증빙이 아니라 소비자 본인의 진술이므로, confirmedFacts에는 절대 넣지 말고 userClaims 수준으로만 반영하세요.
+- "예/아니오"로 답했다고 해서 관련 unresolvedItems 항목을 확정된 사실로 바꾸지 말고, "소비자는 ~라고 답변함"처럼 신중한 어조로만 표현하세요.
+- 답변만으로 새로운 사실을 만들어내거나 할부항변 인정 여부를 판단하지 마세요.
+
 [출력 형식]
 반드시 아래 8개 키를 포함하는 유효한 단일 JSON 객체(JSON Object)로만 응답하세요:
 {
