@@ -45,7 +45,8 @@ def index(case_id="CASE-001"):
     return render_template(
         "analysis.html",
         analysis_result=analysis_data,
-        case=case
+        case=case,
+        active_step=5
     )
 
 
@@ -58,5 +59,6 @@ def run():
     return render_template(
         "analysis.html",
         analysis_result=analysis_data,
-        case=case
+        case=case,
+        active_step=5
     )
