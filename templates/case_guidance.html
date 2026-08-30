@@ -1,11 +1,12 @@
 {% extends "base.html" %}
-{% from "_ui.html" import nav_buttons %}
+{% from "_ui.html" import source_badge, nav_buttons %}
 
 {% block title %}안내{% endblock %}
 
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
   <h1 class="h3 mb-0">이번 거래는 할부항변 대상이 아닙니다</h1>
+  {{ source_badge(source) }}
 </div>
 
 <div class="verdict-banner verdict-secondary mb-3">

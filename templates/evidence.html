@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_ui.html" import notice, nav_buttons %}
+{% from "_ui.html" import source_badge, notice, nav_buttons %}
 
 {% block title %}증빙자료 입력{% endblock %}
 
@@ -9,6 +9,7 @@
     <p class="text-primary fw-semibold mb-1">B 담당 · 자료 입력</p>
     <h1 class="h3 mb-0">증빙자료를 모아 주세요</h1>
   </div>
+  {{ source_badge(source) }}
 </div>
 
 <p class="text-muted small mb-3">

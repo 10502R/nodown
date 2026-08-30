@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_ui.html" import nav_buttons %}
+{% from "_ui.html" import source_badge, nav_buttons %}
 
 {% block title %}기본요건 확인 결과{% endblock %}
 
@@ -10,6 +10,11 @@
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
   <h1 class="h3 mb-0">기본요건 확인 결과 · {{ case.case_id }}</h1>
+  <div class="d-flex flex-wrap gap-1">
+    {{ source_badge(result.case_source) }}
+    {{ source_badge(result.verdict_source) }}
+    {{ source_badge(result.analysis_source) }}
+  </div>
 </div>
 
 <div class="verdict-banner verdict-{{ result.verdict_tone }} mb-3">
@@ -65,7 +70,7 @@
 
 {% if result.analysis and result.analysis.missingEvidence %}
 <div class="nd-card">
-  <h3 class="h6">추가로 필요한 증빙</h3>
+  <h3 class="h6">추가로 필요한 증빙 {{ source_badge(result.analysis_source, "ms-1") }}</h3>
   <ul class="mb-0 small">
     {% for item in result.analysis.missingEvidence %}<li>{{ item }}</li>{% endfor %}
   </ul>
@@ -74,7 +79,7 @@
 
 {% if result.analysis and result.analysis.timeline %}
 <div class="nd-card">
-  <h3 class="h6">자료로 확인된 시간 순서</h3>
+  <h3 class="h6">자료로 확인된 시간 순서 {{ source_badge(result.analysis_source, "ms-1") }}</h3>
   <div class="table-responsive">
     <table class="table table-sm align-middle mb-0">
       <thead><tr><th scope="col">날짜</th><th scope="col">내용</th><th scope="col">출처</th></tr></thead>
