@@ -12,7 +12,7 @@
     "예비 데이터": "badge-source-fixture"
   }.get(source, "badge-source-fixture") -%}
   <span class="badge-source {{ tone }} {{ extra }}" title="이 화면에 표시된 값의 출처입니다.">
-    데이터 출처 : {{ source }}
+    데이터 출처 · {{ source }}
   </span>
 {% endmacro %}
 
