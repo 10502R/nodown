@@ -10,6 +10,7 @@ from services.ocr_service import (
     allowed_file,
     extract_fields,
     extract_text,
+    mask_pii,
 )
 
 
@@ -29,6 +30,56 @@ def test_extract_fields_reads_stop_date_and_replacement_flag():
     fields = extract_fields(SAMPLE_DOCUMENTS["closure_notice"]["text"])
     assert fields["serviceStopDate"] == "2026-08-10"
     assert fields["replacementServiceOffered"] is False
+
+
+def test_extract_fields_reads_korean_style_dates():
+    text = "환불 요청일: 2026년 08월 11일"
+    fields = extract_fields(text)
+    assert fields["refundRequestDate"] == "2026-08-11"
+
+
+def test_extract_fields_reads_korean_style_dates_with_spaces_around_units():
+    text = "서비스 중단일: 2026 년 08 월 10 일"
+    fields = extract_fields(text)
+    assert fields["serviceStopDate"] == "2026-08-10"
+
+
+def test_extract_fields_reads_total_usage_fee_as_contract_amount():
+    text = "총 이용대금\n금 1,200,000원 (신용카드 12개월 할부)"
+    fields = extract_fields(text)
+    assert fields["contractAmount"] == 1_200_000
+
+
+def test_extract_fields_reads_iyongaesiil_as_service_start_date():
+    text = "(이용개시일: 2026년 03월 02일)"
+    fields = extract_fields(text)
+    assert fields["serviceStartDate"] == "2026-03-02"
+
+
+def test_extract_fields_fills_service_dates_from_contract_period_when_unlabeled():
+    text = "계약기간\n2026년 03월 02일 ~ 2027년 03월 01일 (이용개시일: 2026년 03월 02일)"
+    fields = extract_fields(text)
+    assert fields["serviceStartDate"] == "2026-03-02"
+    assert fields["serviceEndDate"] == "2027-03-01"
+
+
+def test_extract_fields_prefers_explicit_label_over_contract_period_fallback():
+    text = "서비스 시작일: 2026.05.01\n계약기간\n2026년 03월 02일 ~ 2027년 03월 01일"
+    fields = extract_fields(text)
+    assert fields["serviceStartDate"] == "2026-05-01"
+    assert fields["serviceEndDate"] == "2027-03-01"
+
+
+def test_extract_fields_reads_signature_date_as_contract_date_when_unlabeled():
+    text = "☑ 본인은 위 내용과 이용약관에 모두 동의합니다.\n2026 년 03 월 02 일"
+    fields = extract_fields(text)
+    assert fields["contractDate"] == "2026-03-02"
+
+
+def test_extract_fields_prefers_explicit_contract_date_label_over_signature_date():
+    text = "계약일: 2026.01.01\n동의합니다.\n2026년 03월 02일"
+    fields = extract_fields(text)
+    assert fields["contractDate"] == "2026-01-01"
 
 
 def test_extract_fields_leaves_missing_values_as_none_not_guessed():
@@ -168,3 +219,39 @@ def test_extract_text_skips_failed_images_and_returns_failed_if_no_text(monkeypa
 
     assert text is None
     assert status == "failed"
+
+
+def test_mask_pii_masks_resident_registration_number():
+    text = "이름: 홍길동\n주민등록번호: 900101-1234567"
+    masked = mask_pii(text)
+    assert "900101-1234567" not in masked
+    assert "[주민등록번호 가림]" in masked
+
+
+def test_mask_pii_masks_card_number_with_or_without_separators():
+    assert "[카드번호 가림]" in mask_pii("카드번호 1234-5678-9012-3456 결제")
+    assert "[카드번호 가림]" in mask_pii("카드번호 1234567890123456 결제")
+
+
+def test_mask_pii_masks_phone_number():
+    assert "[전화번호 가림]" in mask_pii("연락처: 010-1234-5678")
+    assert "[전화번호 가림]" in mask_pii("연락처: 01012345678")
+
+
+def test_mask_pii_leaves_unrelated_text_and_business_registration_number_untouched():
+    """사업자등록번호(3-2-5자리)는 카드번호, 주민등록번호 패턴과 자릿수가 달라 가려지지 않아야 한다."""
+    text = "사업자등록번호: 000-00-00003 (합성 번호)"
+    assert mask_pii(text) == text
+
+
+def test_mask_pii_does_not_affect_field_extraction():
+    text = "계약일: 2026.03.02\n주민등록번호: 900101-1234567\n계약금액: 1,200,000원"
+    masked = mask_pii(text)
+    fields = extract_fields(masked)
+    assert fields["contractDate"] == "2026-03-02"
+    assert fields["contractAmount"] == 1_200_000
+
+
+def test_mask_pii_handles_empty_input():
+    assert mask_pii("") == ""
+    assert mask_pii(None) is None

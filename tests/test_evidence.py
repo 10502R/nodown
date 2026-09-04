@@ -35,13 +35,13 @@ def test_uploading_real_sample_pdf_is_accepted():
     """B-7: 샘플 PDF가 실제 업로드 경로로 올라가는지 확인한다."""
     client = _client()
     with open(os.path.join(SAMPLE_DIR, "contract.pdf"), "rb") as f:
-        data = {"label": "이용계약서", "file": (io.BytesIO(f.read()), "contract.pdf")}
+        data = {"label": "업로드한 계약서", "file": (io.BytesIO(f.read()), "contract.pdf")}
         response = client.post(
             "/evidence/CASE-001/upload", data=data, content_type="multipart/form-data",
             follow_redirects=True,
         )
     assert response.status_code == 200
-    assert "이용계약서" in response.get_data(as_text=True)
+    assert "업로드한 계약서" in response.get_data(as_text=True)
 
 
 def test_uploading_real_sample_image_is_accepted():
@@ -79,6 +79,19 @@ def test_manual_entry_and_delete_round_trip():
 
     response = client.post("/evidence/CASE-001/delete/1", follow_redirects=True)
     assert "아직 등록된 자료가 없습니다" in response.get_data(as_text=True)
+
+
+def test_manual_entry_masks_resident_registration_number_before_display():
+    """사용자가 직접 입력에 실수로 실제 개인정보를 적어도 화면, 세션에 그대로 남지 않는다."""
+    client = _client()
+    response = client.post(
+        "/evidence/CASE-001/manual",
+        data={"label": "직접 입력", "text": "제 주민등록번호는 900101-1234567입니다."},
+        follow_redirects=True,
+    )
+    body = response.get_data(as_text=True)
+    assert "900101-1234567" not in body
+    assert "주민등록번호 가림" in body
 
 
 def test_download_sample_serves_real_file_with_correct_type():

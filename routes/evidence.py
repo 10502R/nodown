@@ -26,9 +26,10 @@ evidence_bp = Blueprint("evidence", __name__, url_prefix="/evidence")
 DEFAULT_CASE_ID = "CASE-001"
 
 PRIVACY_NOTES = [
-    "이 화면은 공모전 시연용으로, 실제 개인정보가 아닌 합성 문서만 사용합니다.",
-    "카드번호·주민등록번호 등 민감정보가 포함된 문서는 업로드하지 마세요.",
-    "업로드한 파일은 서버에 장기간 보관하지 않으며 시연 세션 동안만 유지됩니다.",
+    "업로드하신 자료는 할부항변 신청 자료 준비 목적으로만 사용되며, 이 목적 외에는 활용되지 않습니다.",
+    "문서 인식을 위해 업로드하신 자료는 CLOVA OCR(네이버클라우드)로 전송되어 처리됩니다.",
+    "이 서비스는 이름, 연락처 등 개인정보 자체를 필요로 하지 않으므로, 가능한 한 개인정보가 포함되지 않은 자료를 이용해 주시기 바랍니다. 다만 주민등록번호, 카드번호, 전화번호와 같이 형식이 정해진 정보가 실수로 포함되더라도 자동으로 가려집니다.",
+    "업로드한 파일은 자료 분석이 끝나면 서버에 남기지 않으며, 이용 세션이 종료되면 함께 삭제됩니다.",
 ]
 
 
@@ -50,14 +51,15 @@ def _next_doc_id(documents):
 
 def _add_document(case_id, *, label, source_type, filename, ocr_status, raw_text):
     documents = _documents(case_id)
+    masked_text = ocr_service.mask_pii(raw_text)
     documents.append({
         "id": _next_doc_id(documents),
         "label": label,
         "source_type": source_type,
         "filename": filename,
         "ocr_status": ocr_status,
-        "raw_text": raw_text,
-        "fields": ocr_service.extract_fields(raw_text),
+        "raw_text": masked_text,
+        "fields": ocr_service.extract_fields(masked_text),
     })
     _save_documents(case_id, documents)
 
