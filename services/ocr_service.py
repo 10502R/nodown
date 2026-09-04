@@ -60,21 +60,23 @@ SAMPLE_DOCUMENTS = {
         "label": "이용계약서",
         "file": "contract.pdf",
         "text": (
-            "헬스장 이용계약서\n\n"
-            "계약일: 2026.03.02\n"
-            "계약금액: 1,200,000원\n"
-            "계약기간: 12개월\n"
-            "서비스 시작일: 2026.03.02\n\n"
-            "(시연용 합성 자료이며 실제 상호·개인정보를 포함하지 않습니다.)"
+            "헬스장 이용계약서 (회원 보관용)\n\n"
+            "계약명: 헬스장 이용계약 (12개월 정기 회원권 / 할부 결제)\n"
+            "계약기간: 2026년 03월 02일 ~ 2027년 03월 01일 (이용개시일: 2026년 03월 02일)\n"
+            "총 이용대금: 금 1,200,000원 (신용카드 12개월 할부, 월 100,000원)\n\n"
+            "☑ 본인은 위 내용과 이용약관에 모두 동의합니다.\n"
+            "2026년 03월 02일\n\n"
+            "(시연용 합성 자료이며 실제 상호, 인물, 연락처와 무관합니다.)"
         ),
     },
     "refund_sms": {
         "label": "환불 요청 문자",
         "file": "refund_sms.png",
         "text": (
-            "[문자 대화]\n"
-            "소비자: 헬스장이 문을 닫아서 더 이상 이용을 못 하고 있어요. 환불 요청드립니다.\n"
-            "환불 요청일: 2026.08.11\n\n"
+            "[카카오톡 대화]\n"
+            "2026년 8월 11일 화요일\n"
+            "소비자: 헬스장이 문을 닫아서 더 이상 이용을 못 하고 있어요. "
+            "회원권 환불 요청 드립니다.\n\n"
             "(시연용 합성 자료)"
         ),
     },
@@ -82,10 +84,11 @@ SAMPLE_DOCUMENTS = {
         "label": "서비스 중단 안내문",
         "file": "closure_notice.png",
         "text": (
-            "서비스 중단 안내\n\n"
-            "시설 사정으로 2026.08.10부로 서비스를 중단합니다.\n"
-            "서비스 중단일: 2026.08.10\n"
-            "대체 서비스: 없음\n\n"
+            "시설 운영 중단 안내\n\n"
+            "회원 여러분께 안내드립니다.\n"
+            "올데이 피트니스는 시설 사정으로 2026.08.10 부로 운영을 중단합니다.\n"
+            "운영 중단일: 2026.08.10\n"
+            "재개 일정: 별도 공지 시까지\n\n"
             "(시연용 합성 자료)"
         ),
     },
@@ -143,6 +146,11 @@ _CONTRACT_PERIOD_PATTERN = re.compile(r"계약\s*기간\s*[:：]?\s*" + _DATE + 
 # "동의합니다\n2026년 03월 02일"처럼 "계약일"이라는 라벨 없이 동의, 서명 문구
 # 바로 뒤에만 적힌 날짜를 위한 보조 패턴. 서명일을 계약일로 본다.
 _SIGNATURE_DATE_PATTERN = re.compile(r"동의합니다\.?\s*" + _DATE)
+
+# 채팅 캡처의 날짜 구분선("2026년 8월 11일 화요일")처럼 "환불 요청일" 라벨이
+# 없는 경우를 위한 보조 패턴. 날짜 뒤 120자 이내에 "환불 요청"이 나오면 그
+# 날짜를 환불 요청일로 본다.
+_REFUND_MENTION_DATE_PATTERN = re.compile(_DATE + r"[\s\S]{0,120}?환불\s*요청")
 
 
 def allowed_file(filename):
@@ -238,7 +246,8 @@ def extract_text(file_storage):
 _PII_PATTERNS = [
     ("카드번호", re.compile(r"(?<!\d)\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{2,4}(?!\d)")),
     ("주민등록번호", re.compile(r"(?<!\d)\d{6}[-\s]?[1-8]\d{6}(?!\d)")),
-    ("전화번호", re.compile(r"(?<!\d)01[016789][-\s]?\d{3,4}[-\s]?\d{4}(?!\d)")),
+    # 010 등 휴대전화뿐 아니라 02, 031 같은 유선 지역번호도 잡는다.
+    ("전화번호", re.compile(r"(?<!\d)0\d{1,2}[-\s]?\d{3,4}[-\s]?\d{4}(?!\d)")),
 ]
 
 
@@ -292,6 +301,11 @@ def extract_fields(text):
         signature_match = _SIGNATURE_DATE_PATTERN.search(text)
         if signature_match:
             fields["contractDate"] = _to_iso_date(signature_match)
+
+    if fields["refundRequestDate"] is None:
+        refund_mention_match = _REFUND_MENTION_DATE_PATTERN.search(text)
+        if refund_mention_match:
+            fields["refundRequestDate"] = _to_iso_date(refund_mention_match)
 
     return fields
 

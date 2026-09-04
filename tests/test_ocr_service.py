@@ -26,10 +26,17 @@ def test_extract_fields_reads_refund_request_date():
     assert fields["refundRequestDate"] == "2026-08-11"
 
 
-def test_extract_fields_reads_stop_date_and_replacement_flag():
+def test_extract_fields_reads_stop_date():
     fields = extract_fields(SAMPLE_DOCUMENTS["closure_notice"]["text"])
     assert fields["serviceStopDate"] == "2026-08-10"
+
+
+def test_extract_fields_reads_replacement_service_flag():
+    fields = extract_fields("서비스 중단일: 2026.08.10\n대체 서비스: 없음")
     assert fields["replacementServiceOffered"] is False
+
+    fields = extract_fields("대체 서비스: 제공")
+    assert fields["replacementServiceOffered"] is True
 
 
 def test_extract_fields_reads_korean_style_dates():
@@ -80,6 +87,24 @@ def test_extract_fields_prefers_explicit_contract_date_label_over_signature_date
     text = "계약일: 2026.01.01\n동의합니다.\n2026년 03월 02일"
     fields = extract_fields(text)
     assert fields["contractDate"] == "2026-01-01"
+
+
+def test_extract_fields_reads_chat_date_divider_near_refund_mention_as_refund_request_date():
+    """환불 요청일 라벨이 없는 채팅 캡처에서도, 날짜 뒤 근처에 환불 요청 언급이 있으면 인식한다."""
+    text = (
+        "2026년 8월 11일 화요일\n"
+        "안녕하세요, 올데이 피트니스 회원\n"
+        "김민준입니다. 회원권 환불 요청\n"
+        "드립니다."
+    )
+    fields = extract_fields(text)
+    assert fields["refundRequestDate"] == "2026-08-11"
+
+
+def test_extract_fields_prefers_explicit_refund_request_label_over_chat_date_divider():
+    text = "환불 요청일: 2026.08.13\n2026년 8월 11일 화요일\n환불 요청 드립니다."
+    fields = extract_fields(text)
+    assert fields["refundRequestDate"] == "2026-08-13"
 
 
 def test_extract_fields_leaves_missing_values_as_none_not_guessed():
@@ -236,6 +261,11 @@ def test_mask_pii_masks_card_number_with_or_without_separators():
 def test_mask_pii_masks_phone_number():
     assert "[전화번호 가림]" in mask_pii("연락처: 010-1234-5678")
     assert "[전화번호 가림]" in mask_pii("연락처: 01012345678")
+
+
+def test_mask_pii_masks_landline_numbers_too():
+    assert "[전화번호 가림]" in mask_pii("사업자 연락처: 02-2345-6789")
+    assert "[전화번호 가림]" in mask_pii("연락처: 031-123-4567")
 
 
 def test_mask_pii_leaves_unrelated_text_and_business_registration_number_untouched():
