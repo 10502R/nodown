@@ -9,7 +9,7 @@ analysis_bp = Blueprint("analysis", __name__, url_prefix="/analysis")
 
 _ANSWER_VALUES = {"yes", "no", "unknown"}
 
-_FORCE_FIXTURE = False # 개발 중 AI 호출을 끄고 싶을 때 True. 끝나면 False로 되돌린다.
+_FORCE_FIXTURE = True # 개발 중 AI 호출을 끄고 싶을 때 True. 끝나면 False로 되돌린다.
 
 
 def _run_analysis(case_id):
