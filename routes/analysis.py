@@ -9,6 +9,25 @@ analysis_bp = Blueprint("analysis", __name__, url_prefix="/analysis")
 
 _ANSWER_VALUES = {"yes", "no", "unknown"}
 
+_FORCE_FIXTURE = True # 개발 중 AI 호출을 끄고 싶을 때 True. 끝나면 False로 되돌린다.
+
+
+def _run_analysis(case_id):
+    case = _load_case(case_id)
+    if _FORCE_FIXTURE:
+        analysis_data = llm_service._apply_answers_to_fixture(
+            llm_service._load_fixture_result(),
+            _saved_followup_answers(case_id),
+        )
+    else:
+        analysis_data = llm_service.analyze_case(
+            case_id,
+            case=case,
+            evidence=_evidence_documents(case_id),
+            answers=_saved_followup_answers(case_id),
+        )
+    return analysis_data, case
+
 
 def _evidence_documents(case_id):
     """B가 자료 입력 화면에서 세션에 쌓은 증빙 문서 목록을 읽는다(B→C 연동)."""
@@ -30,17 +49,6 @@ def _load_case(case_id):
     except Exception:
         pass
     return {"case_id": case_id, "merchant_name": "올데이 피트니스"}
-
-
-def _run_analysis(case_id):
-    case = _load_case(case_id)
-    analysis_data = llm_service.analyze_case(
-        case_id,
-        case=case,
-        evidence=_evidence_documents(case_id),
-        answers=_saved_followup_answers(case_id),
-    )
-    return analysis_data, case
 
 
 @analysis_bp.route("/", methods=["GET"])
