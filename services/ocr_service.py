@@ -4,9 +4,13 @@
 #
 # 주의: 텍스트에 명시되지 않은 값은 임의로 채우지 않고 None(미확인)으로 둔다.
 
+import base64
+import json
 import mimetypes
 import os
 import re
+import time
+import uuid
 
 import requests
 from werkzeug.datastructures import FileStorage
@@ -56,21 +60,23 @@ SAMPLE_DOCUMENTS = {
         "label": "이용계약서",
         "file": "contract.pdf",
         "text": (
-            "헬스장 이용계약서\n\n"
-            "계약일: 2026.03.02\n"
-            "계약금액: 1,200,000원\n"
-            "계약기간: 12개월\n"
-            "서비스 시작일: 2026.03.02\n\n"
-            "(시연용 합성 자료이며 실제 상호·개인정보를 포함하지 않습니다.)"
+            "헬스장 이용계약서 (회원 보관용)\n\n"
+            "계약명: 헬스장 이용계약 (12개월 정기 회원권 / 할부 결제)\n"
+            "계약기간: 2026년 03월 02일 ~ 2027년 03월 01일 (이용개시일: 2026년 03월 02일)\n"
+            "총 이용대금: 금 1,200,000원 (신용카드 12개월 할부, 월 100,000원)\n\n"
+            "☑ 본인은 위 내용과 이용약관에 모두 동의합니다.\n"
+            "2026년 03월 02일\n\n"
+            "(시연용 합성 자료이며 실제 상호, 인물, 연락처와 무관합니다.)"
         ),
     },
     "refund_sms": {
         "label": "환불 요청 문자",
         "file": "refund_sms.png",
         "text": (
-            "[문자 대화]\n"
-            "소비자: 헬스장이 문을 닫아서 더 이상 이용을 못 하고 있어요. 환불 요청드립니다.\n"
-            "환불 요청일: 2026.08.11\n\n"
+            "[카카오톡 대화]\n"
+            "2026년 8월 11일 화요일\n"
+            "소비자: 헬스장이 문을 닫아서 더 이상 이용을 못 하고 있어요. "
+            "회원권 환불 요청 드립니다.\n\n"
             "(시연용 합성 자료)"
         ),
     },
@@ -78,10 +84,11 @@ SAMPLE_DOCUMENTS = {
         "label": "서비스 중단 안내문",
         "file": "closure_notice.png",
         "text": (
-            "서비스 중단 안내\n\n"
-            "시설 사정으로 2026.08.10부로 서비스를 중단합니다.\n"
-            "서비스 중단일: 2026.08.10\n"
-            "대체 서비스: 없음\n\n"
+            "시설 운영 중단 안내\n\n"
+            "회원 여러분께 안내드립니다.\n"
+            "올데이 피트니스는 시설 사정으로 2026.08.10 부로 운영을 중단합니다.\n"
+            "운영 중단일: 2026.08.10\n"
+            "재개 일정: 별도 공지 시까지\n\n"
             "(시연용 합성 자료)"
         ),
     },
@@ -112,18 +119,38 @@ def open_sample_file_storage(key):
         content_type=content_type or "application/octet-stream",
     )
 
-_DATE = r"([0-9]{4})[.\-/]([0-9]{1,2})[.\-/]([0-9]{1,2})"
+# "2026.03.02" 같은 점 구분 표기와 "2026년 03월 02일"(공백 포함) 같은
+# 한글 표기를 모두 인식한다. 세 그룹(연, 월, 일)은 항상 group(1)~group(3)에 담긴다.
+_DATE = (
+    r"([0-9]{4})\s*(?:[.\-/]|년)\s*([0-9]{1,2})\s*(?:[.\-/]|월)\s*([0-9]{1,2})\s*(?:일)?"
+)
 
 _FIELD_PATTERNS = {
     "contractDate": re.compile(r"계약일\s*[:：]?\s*" + _DATE),
-    "contractAmount": re.compile(r"계약\s*금액\s*[:：]?\s*([0-9][0-9,]*)\s*원"),
-    "serviceStartDate": re.compile(r"(?:서비스|이용)\s*시작일\s*[:：]?\s*" + _DATE),
+    "contractAmount": re.compile(
+        r"(?:계약\s*금액|총\s*이용대금)\s*[:：]?\s*(?:금\s*)?([0-9][0-9,]*)\s*원"
+    ),
+    "serviceStartDate": re.compile(r"(?:서비스|이용)\s*(?:시작일|개시일)\s*[:：]?\s*" + _DATE),
     "serviceEndDate": re.compile(r"(?:서비스|이용)\s*(?:종료일|만료일)\s*[:：]?\s*" + _DATE),
     "refundRequestDate": re.compile(r"환불\s*요청일\s*[:：]?\s*" + _DATE),
     "serviceStopDate": re.compile(r"(?:서비스\s*중단일|중단일)\s*[:：]?\s*" + _DATE),
 }
 
 _REPLACEMENT_PATTERN = re.compile(r"대체\s*서비스\s*[:：]?\s*(제공|있음|없음|미제공)")
+
+# "계약기간\n2026년 03월 02일 ~ 2027년 03월 01일"처럼 라벨 없이 기간으로만
+# 적힌 문서를 위한 보조 패턴. 명시적인 서비스 시작일, 종료일 라벨을 못 찾았을
+# 때만 채워 넣는다(우선순위는 _FIELD_PATTERNS의 명시적 라벨이 더 높다).
+_CONTRACT_PERIOD_PATTERN = re.compile(r"계약\s*기간\s*[:：]?\s*" + _DATE + r"\s*~\s*" + _DATE)
+
+# "동의합니다\n2026년 03월 02일"처럼 "계약일"이라는 라벨 없이 동의, 서명 문구
+# 바로 뒤에만 적힌 날짜를 위한 보조 패턴. 서명일을 계약일로 본다.
+_SIGNATURE_DATE_PATTERN = re.compile(r"동의합니다\.?\s*" + _DATE)
+
+# 채팅 캡처의 날짜 구분선("2026년 8월 11일 화요일")처럼 "환불 요청일" 라벨이
+# 없는 경우를 위한 보조 패턴. 날짜 뒤 120자 이내에 "환불 요청"이 나오면 그
+# 날짜를 환불 요청일로 본다.
+_REFUND_MENTION_DATE_PATTERN = re.compile(_DATE + r"[\s\S]{0,120}?환불\s*요청")
 
 
 def allowed_file(filename):
@@ -134,14 +161,38 @@ def allowed_file(filename):
 
 
 def _text_from_clova_response(payload):
-    """CLOVA 일반 OCR 응답(images[].fields[].inferText)에서 줄 단위 텍스트를 만든다."""
+    """CLOVA 일반 OCR 응답(images[].fields[].inferText)에서 사람이 읽기 좋은 텍스트를 만든다.
+
+    CLOVA는 단어나 구절 단위로 인식 결과를 쪼개서 돌려주므로, 같은 줄에 속한
+    조각(lineBreak=False)은 띄어쓰기로 이어붙이고 줄이 끝나는 조각
+    (lineBreak=True) 뒤에서만 줄을 바꾼다. 개별 이미지의 인식이 실패한 경우
+    (inferResult != "SUCCESS")는 건너뛴다.
+    """
     lines = []
     for image in payload.get("images") or []:
+        if image.get("inferResult") not in (None, "SUCCESS"):
+            continue
+        current_line = []
         for field in image.get("fields") or []:
             value = field.get("inferText")
-            if value:
-                lines.append(value)
+            if not value:
+                continue
+            current_line.append(value)
+            if field.get("lineBreak", True):
+                lines.append(" ".join(current_line))
+                current_line = []
+        if current_line:
+            lines.append(" ".join(current_line))
     return "\n".join(lines)
+
+
+_CLOVA_FORMAT_ALIASES = {"jpeg": "jpg"}
+
+
+def _clova_image_format(filename):
+    """CLOVA가 요구하는 images[].format 값으로 확장자를 정규화한다."""
+    ext = filename.rsplit(".", 1)[1].lower() if filename and "." in filename else ""
+    return _CLOVA_FORMAT_ALIASES.get(ext, ext or "jpg")
 
 
 def extract_text(file_storage):
@@ -150,29 +201,72 @@ def extract_text(file_storage):
     file_storage: Flask request.files의 FileStorage 객체
     반환: (텍스트 또는 None, 상태)
       상태는 "ok" | "not_configured"(API 키 미설정) | "failed"(호출·인식 실패) 중 하나.
+
+    이미지를 base64로 인코딩해 JSON 본문으로 Invoke URL에 POST하고, 헤더에
+    X-OCR-SECRET을 실어 보낸다. 응답 JSON은 그대로 파싱해 텍스트만 뽑아 쓴다.
     """
     if not CLOVA_OCR_API_URL or not CLOVA_OCR_SECRET_KEY:
         return None, "not_configured"
 
-    files = {"file": (file_storage.filename, file_storage.stream, file_storage.mimetype)}
-    headers = {"X-OCR-SECRET": CLOVA_OCR_SECRET_KEY}
+    file_storage.stream.seek(0)
+    encoded_image = base64.b64encode(file_storage.stream.read()).decode("ascii")
+
+    payload = {
+        "version": "V2",
+        "requestId": str(uuid.uuid4()),
+        "timestamp": int(time.time() * 1000),
+        "lang": "ko",
+        "images": [{
+            "format": _clova_image_format(file_storage.filename),
+            "name": "evidence",
+            "data": encoded_image,
+        }],
+    }
+    headers = {"X-OCR-SECRET": CLOVA_OCR_SECRET_KEY, "Content-Type": "application/json"}
 
     try:
-        response = requests.post(CLOVA_OCR_API_URL, headers=headers, files=files, timeout=30)
+        response = requests.post(CLOVA_OCR_API_URL, headers=headers, json=payload, timeout=30)
         response.raise_for_status()
-        payload = response.json()
+        result = response.json()
     except (requests.RequestException, ValueError):
         return None, "failed"
 
-    text = _text_from_clova_response(payload)
+    text = _text_from_clova_response(result)
     if not text:
         return None, "failed"
     return text, "ok"
 
 
-def _to_iso_date(match):
-    year, month, day = match.group(1), match.group(2), match.group(3)
+# 정형화된 개인정보 패턴을 세션에 저장하기 전에 가린다. 화면 안내문("실제
+# 개인정보를 올리지 말아 달라")과 별개로, 사용자가 실수로 실제 개인정보가
+# 담긴 문서를 올리는 경우를 대비한 최소한의 안전장치다. 이름, 주소처럼
+# 정형화되지 않은 개인정보까지 걸러내지는 못한다.
+# 한글 음절도 정규식 \w에 포함되어 \b가 숫자-한글 경계에서 동작하지 않으므로
+# (예: "900101-1234567입니다"), 자릿수 경계는 \b 대신 숫자 전후 lookaround로 확인한다.
+_PII_PATTERNS = [
+    ("카드번호", re.compile(r"(?<!\d)\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{2,4}(?!\d)")),
+    ("주민등록번호", re.compile(r"(?<!\d)\d{6}[-\s]?[1-8]\d{6}(?!\d)")),
+    # 010 등 휴대전화뿐 아니라 02, 031 같은 유선 지역번호도 잡는다.
+    ("전화번호", re.compile(r"(?<!\d)0\d{1,2}[-\s]?\d{3,4}[-\s]?\d{4}(?!\d)")),
+]
+
+
+def mask_pii(text):
+    """카드번호, 주민등록번호, 전화번호로 보이는 패턴을 [항목 가림]으로 대체한다."""
+    if not text:
+        return text
+    masked = text
+    for label, pattern in _PII_PATTERNS:
+        masked = pattern.sub("[{0} 가림]".format(label), masked)
+    return masked
+
+
+def _format_date(year, month, day):
     return "{0}-{1:0>2}-{2:0>2}".format(year, month, day)
+
+
+def _to_iso_date(match, group_offset=0):
+    return _format_date(*match.group(group_offset + 1, group_offset + 2, group_offset + 3))
 
 
 def extract_fields(text):
@@ -195,6 +289,23 @@ def extract_fields(text):
     replacement_match = _REPLACEMENT_PATTERN.search(text)
     if replacement_match:
         fields["replacementServiceOffered"] = replacement_match.group(1) in {"제공", "있음"}
+
+    period_match = _CONTRACT_PERIOD_PATTERN.search(text)
+    if period_match:
+        if fields["serviceStartDate"] is None:
+            fields["serviceStartDate"] = _to_iso_date(period_match, group_offset=0)
+        if fields["serviceEndDate"] is None:
+            fields["serviceEndDate"] = _to_iso_date(period_match, group_offset=3)
+
+    if fields["contractDate"] is None:
+        signature_match = _SIGNATURE_DATE_PATTERN.search(text)
+        if signature_match:
+            fields["contractDate"] = _to_iso_date(signature_match)
+
+    if fields["refundRequestDate"] is None:
+        refund_mention_match = _REFUND_MENTION_DATE_PATTERN.search(text)
+        if refund_mention_match:
+            fields["refundRequestDate"] = _to_iso_date(refund_mention_match)
 
     return fields
 
