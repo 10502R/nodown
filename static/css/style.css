@@ -338,3 +338,229 @@ h3 { font-size: clamp(1.1rem, 3vw, 1.3rem); }
   .nd-card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
   a[href]:after { content: ""; }
 }
+
+/* =======================================================================
+   담당: D — 소개(메인) 화면 전용 디자인.
+   금융권 대표 사이트 수준의 여백·정보 밀도를 목표로 한다.
+   여기 클래스는 index.html에서만 쓰고 다른 화면에는 영향을 주지 않는다.
+   ======================================================================= */
+
+body.home main.container { max-width: 1120px; padding-top: 0; }
+
+/* 시연 고지는 메인에서 눈에 덜 띄게 낮춘다. */
+body.home .demo-ribbon { background: #f0f1f4; color: #6b7280; font-size: .74rem; padding: .3rem 1rem; }
+
+/* --- 히어로 --- */
+
+.home-hero {
+  display: grid;
+  grid-template-columns: 1.05fr .95fr;
+  gap: 3rem;
+  align-items: center;
+  padding: 4.5rem 0 3.5rem;
+}
+
+.home-eyebrow {
+  display: inline-flex; align-items: center; gap: .45rem;
+  color: var(--nd-primary);
+  font-size: .84rem; font-weight: 700;
+  letter-spacing: .02em;
+  margin-bottom: 1.1rem;
+}
+.home-eyebrow::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--nd-primary);
+}
+
+.home-hero h1 {
+  font-size: clamp(2rem, 4.6vw, 3.05rem);
+  line-height: 1.28;
+  letter-spacing: -.03em;
+  margin-bottom: 1.1rem;
+}
+.home-hero h1 em { font-style: normal; color: var(--nd-primary); }
+
+.home-hero .home-sub {
+  color: var(--nd-muted);
+  font-size: 1.05rem;
+  line-height: 1.7;
+  margin-bottom: 2rem;
+  max-width: 30rem;
+}
+
+.home-cta { display: flex; flex-wrap: wrap; gap: .6rem; }
+.home-cta .btn {
+  border-radius: 999px;
+  padding: .85rem 1.9rem;
+  font-weight: 700;
+  font-size: 1rem;
+}
+.home-cta .btn-primary { background: var(--nd-primary); border-color: var(--nd-primary); }
+.home-cta .btn-primary:hover { background: var(--nd-primary-dark); border-color: var(--nd-primary-dark); }
+.home-cta .btn-outline-secondary { border-color: var(--nd-border); color: var(--nd-text); background: #fff; }
+.home-cta .btn-outline-secondary:hover { border-color: var(--nd-text); background: #fff; color: var(--nd-text); }
+
+/* 히어로 오른쪽: 카드사 앱 알림 목업 */
+
+.home-visual { display: flex; justify-content: center; }
+
+.home-phone {
+  width: 320px;
+  background: #fff;
+  border: 1px solid var(--nd-border);
+  border-radius: 26px;
+  padding: 1.1rem 1rem 1.4rem;
+  box-shadow: 0 24px 60px rgba(31, 36, 48, .12);
+}
+.home-phone-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: .72rem; color: var(--nd-muted); margin-bottom: 1rem;
+}
+.home-phone-bar .dots { display: flex; gap: 3px; }
+.home-phone-bar .dots span { width: 4px; height: 4px; border-radius: 50%; background: var(--nd-border); }
+
+.home-push {
+  border: 1px solid var(--nd-border);
+  border-radius: 14px;
+  padding: .8rem .85rem;
+  margin-bottom: .6rem;
+  background: #fff;
+}
+.home-push.is-active {
+  border-color: rgba(31, 79, 216, .35);
+  box-shadow: 0 8px 22px rgba(31, 79, 216, .12);
+}
+.home-push .app {
+  display: flex; align-items: center; gap: .4rem;
+  font-size: .72rem; color: var(--nd-muted); margin-bottom: .35rem;
+}
+.home-push .app i {
+  width: 15px; height: 15px; border-radius: 5px;
+  background: var(--nd-primary); display: inline-block;
+}
+.home-push .title { font-weight: 700; font-size: .9rem; margin-bottom: .15rem; }
+.home-push .body { font-size: .8rem; color: var(--nd-muted); margin: 0; line-height: 1.5; }
+.home-push.is-muted { opacity: .45; }
+
+.home-phone-note {
+  margin: 1rem 0 0;
+  font-size: .74rem;
+  color: var(--nd-muted);
+  text-align: center;
+}
+
+/* --- 빠른 이동 타일 --- */
+
+.home-quick {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  background: #fff;
+  border: 1px solid var(--nd-border);
+  border-radius: 18px;
+  box-shadow: var(--nd-shadow);
+  overflow: hidden;
+}
+.home-quick a {
+  display: flex; flex-direction: column; align-items: center; gap: .55rem;
+  padding: 1.6rem .8rem;
+  text-decoration: none;
+  color: var(--nd-text);
+  border-right: 1px solid var(--nd-border);
+  transition: background .15s;
+}
+.home-quick a:last-child { border-right: 0; }
+.home-quick a:hover { background: #f7f9ff; }
+.home-quick .ico {
+  width: 44px; height: 44px; border-radius: 14px;
+  background: #eef2ff; color: var(--nd-primary);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.home-quick .ico svg { width: 22px; height: 22px; }
+.home-quick .label { font-weight: 700; font-size: .95rem; }
+.home-quick .desc { font-size: .78rem; color: var(--nd-muted); }
+
+/* --- 공통 섹션 --- */
+
+.home-section { padding: 4rem 0 0; }
+.home-section-head { margin-bottom: 1.75rem; }
+.home-section-head h2 {
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  letter-spacing: -.02em;
+  margin: 0 0 .4rem;
+}
+.home-section-head p { color: var(--nd-muted); margin: 0; font-size: .96rem; }
+
+/* --- 3단계 흐름 --- */
+
+.home-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.home-step {
+  background: #fff;
+  border: 1px solid var(--nd-border);
+  border-radius: 16px;
+  padding: 1.6rem 1.4rem;
+}
+.home-step .n {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--nd-primary); color: #fff;
+  font-size: .85rem; font-weight: 700;
+  margin-bottom: .9rem;
+}
+.home-step h3 { font-size: 1.08rem; margin-bottom: .4rem; }
+.home-step p { color: var(--nd-muted); font-size: .9rem; margin: 0; line-height: 1.6; }
+
+/* --- 문제 정의(대비 강조) --- */
+
+.home-band {
+  margin-top: 4rem;
+  background: #101728;
+  color: #e8ebf2;
+  border-radius: 22px;
+  padding: 3rem 3rem 3.2rem;
+}
+.home-band h2 { color: #fff; font-size: clamp(1.35rem, 2.8vw, 1.8rem); margin-bottom: 2rem; letter-spacing: -.02em; }
+.home-pains { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+.home-pain .q { color: #7d93d6; font-size: .82rem; font-weight: 700; margin-bottom: .5rem; }
+.home-pain p { margin: 0; font-size: 1.02rem; line-height: 1.6; color: #d6dbe6; }
+.home-pain strong { color: #fff; font-weight: 700; }
+
+/* --- 마무리 CTA --- */
+
+.home-final {
+  margin: 4rem 0 1rem;
+  text-align: center;
+  background: #fff;
+  border: 1px solid var(--nd-border);
+  border-radius: 22px;
+  padding: 3rem 1.5rem;
+  box-shadow: var(--nd-shadow);
+}
+.home-final h2 { font-size: clamp(1.3rem, 2.8vw, 1.8rem); margin-bottom: .6rem; letter-spacing: -.02em; }
+.home-final p { color: var(--nd-muted); margin-bottom: 1.6rem; }
+
+.home-disclosure {
+  margin: 0 0 2rem;
+  font-size: .8rem;
+  color: var(--nd-muted);
+  text-align: center;
+  line-height: 1.7;
+}
+
+/* --- 반응형 --- */
+
+@media (max-width: 991px) {
+  .home-hero { grid-template-columns: 1fr; gap: 2.5rem; padding: 3rem 0 2.5rem; }
+  .home-quick { grid-template-columns: repeat(2, 1fr); }
+  .home-quick a:nth-child(2) { border-right: 0; }
+  .home-quick a:nth-child(-n+2) { border-bottom: 1px solid var(--nd-border); }
+  .home-steps, .home-pains { grid-template-columns: 1fr; }
+  .home-band { padding: 2.2rem 1.5rem; }
+}
+
+@media (max-width: 576px) {
+  .home-hero { padding: 2.2rem 0 2rem; }
+  .home-cta .btn { width: 100%; }
+  .home-phone { width: 100%; max-width: 320px; }
+  .home-section { padding-top: 2.8rem; }
+}

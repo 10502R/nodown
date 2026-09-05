@@ -1,73 +1,143 @@
 {% extends "base.html" %}
-{% from "_ui.html" import source_badge %}
+
+{# 담당: D — 소개(메인) 화면.
+   원칙: 한 화면에서 읽어야 할 문장을 줄이고, 다음 행동 하나를 크게 보여준다. #}
 
 {% block title %}서비스 소개{% endblock %}
+{% block body_class %}home{% endblock %}
 
 {% block content %}
-<section class="text-center py-4">
-  <p class="badge-source badge-source-synthetic mb-3">공모전 MVP · 합성데이터 시연</p>
-  <h1 class="mb-3">장기할부로 결제한 가맹점이 문을 닫았다면,<br>카드사가 먼저 알려드립니다</h1>
-  <p class="lead text-muted mb-4">
-    헬스장·필라테스·학원처럼 오래 쓰는 서비스를 할부로 결제한 뒤 가맹점이 폐업하면,
-    소비자는 남은 할부금을 계속 내면서도 무엇을 준비해야 할지 알기 어렵습니다.
-    nodown은 피해 가능성이 있는 거래를 먼저 찾아내고, 할부항변에 필요한 자료 준비를 도와드립니다.
-  </p>
-  <div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
-    <a class="btn btn-primary btn-lg" href="{{ url_for('result.demo_start') }}"
-       data-loading="대표 시나리오를 준비하고 있습니다">대표 시나리오 시작</a>
-    <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('detection.index') }}">비교 시나리오 보기</a>
+
+<section class="home-hero">
+  <div>
+    <span class="home-eyebrow">장기할부 피해 선제 알림</span>
+    <h1>결제한 곳이 문을 닫으면,<br><em>카드사가 먼저</em> 알려드립니다</h1>
+    <p class="home-sub">
+      폐업한 가맹점의 할부 거래를 찾아 알림을 보내고,
+      할부항변에 필요한 자료를 함께 정리해 드립니다.
+    </p>
+    <div class="home-cta">
+      <a class="btn btn-primary" href="{{ url_for('result.demo_start') }}"
+         data-loading="시나리오를 준비하고 있습니다">내 거래 확인하기</a>
+      <a class="btn btn-outline-secondary" href="{{ url_for('detection.index') }}">탐지 결과 보기</a>
+    </div>
+  </div>
+
+  <div class="home-visual">
+    <div class="home-phone" aria-hidden="true">
+      <div class="home-phone-bar">
+        <span>9:41</span>
+        <span class="dots"><span></span><span></span><span></span></span>
+      </div>
+      <div class="home-push is-active">
+        <div class="app"><i></i> 카드 앱 · 지금</div>
+        <div class="title">할부 결제하신 가맹점이 폐업했습니다</div>
+        <p class="body">더힘찬짐 센터점 · 잔여 할부금 확인이 필요합니다</p>
+      </div>
+      <div class="home-push is-muted">
+        <div class="app"><i></i> 카드 앱 · 어제</div>
+        <div class="title">10월 이용대금 명세서</div>
+        <p class="body">결제 예정 금액을 확인해 주세요</p>
+      </div>
+      <p class="home-phone-note">시연용 알림 화면</p>
+    </div>
   </div>
 </section>
 
-<section class="nd-card">
-  <h3>이 서비스가 해결하는 문제</h3>
-  <div class="row g-3">
-    <div class="col-md-4">
-      <h4 class="h6 mb-1">폐업 사실을 늦게 안다</h4>
-      <p class="small text-muted mb-0">가맹점이 문을 닫아도 소비자에게 따로 알려주는 곳이 없어, 할부금을 내는 동안 대응 시기를 놓칩니다.</p>
+<nav class="home-quick" aria-label="주요 화면 바로가기">
+  <a href="{{ url_for('detection.index') }}">
+    <span class="ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.4-4.4"></path>
+      </svg>
+    </span>
+    <span class="label">거래 탐지</span>
+    <span class="desc">폐업 가맹점 찾기</span>
+  </a>
+  <a href="{{ url_for('evidence.index') }}">
+    <span class="ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path>
+        <path d="M14 3v5h5"></path><path d="M9 13h6M9 17h4"></path>
+      </svg>
+    </span>
+    <span class="label">자료 입력</span>
+    <span class="desc">계약서·문자 업로드</span>
+  </a>
+  <a href="{{ url_for('analysis.index') }}">
+    <span class="ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19V9M10 19V5M16 19v-6M22 19H2"></path>
+      </svg>
+    </span>
+    <span class="label">AI 분석</span>
+    <span class="desc">시간순 정리</span>
+  </a>
+  <a href="{{ url_for('result.case_result', case_id='CASE-001') }}">
+    <span class="ico">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 6L9 17l-5-5"></path>
+      </svg>
+    </span>
+    <span class="label">결과 확인</span>
+    <span class="desc">요건 충족 여부</span>
+  </a>
+</nav>
+
+<section class="home-section">
+  <div class="home-section-head">
+    <h2>3단계면 끝납니다</h2>
+    <p>알림을 받은 뒤 필요한 일은 이것뿐입니다.</p>
+  </div>
+  <div class="home-steps">
+    <div class="home-step">
+      <span class="n">1</span>
+      <h3>알림 확인</h3>
+      <p>폐업으로 이용이 끊긴 할부 거래를 카드사가 먼저 찾아 알려드립니다.</p>
     </div>
-    <div class="col-md-4">
-      <h4 class="h6 mb-1">무엇을 준비할지 모른다</h4>
-      <p class="small text-muted mb-0">할부항변에는 계약서·환불 요청 기록·중단 안내문이 필요하지만, 어떤 자료가 왜 필요한지 안내가 없습니다.</p>
+    <div class="home-step">
+      <span class="n">2</span>
+      <h3>자료 올리기</h3>
+      <p>계약서와 안내 문자를 올리면 계약일·금액·이용기간을 자동으로 읽습니다.</p>
     </div>
-    <div class="col-md-4">
-      <h4 class="h6 mb-1">자료를 정리하기 어렵다</h4>
-      <p class="small text-muted mb-0">여러 자료에 흩어진 날짜와 금액을 시간순으로 정리해 설명하는 일 자체가 부담이라 포기하게 됩니다.</p>
+    <div class="home-step">
+      <span class="n">3</span>
+      <h3>제출자료 받기</h3>
+      <p>요건 충족 여부와 근거를 확인하고 카드사 제출용 초안을 내려받습니다.</p>
     </div>
   </div>
 </section>
 
-<section class="nd-card">
-  <h3>전체 이용 흐름</h3>
-  <ol class="mb-0">
-    <li><strong>거래 탐지</strong> — 카드사가 장기할부·잔여 할부금이 남은 거래 중 가맹점이 폐업한 건을 찾습니다.</li>
-    <li><strong>앱 알림</strong> — 해당 거래의 소비자에게 카드사 앱 알림을 보냅니다.</li>
-    <li><strong>상황 확인</strong> — 소비자가 지금 서비스를 이용하지 못하는 상황인지 선택합니다.</li>
-    <li><strong>자료 입력</strong> — 계약서·문자 등을 올리면 OCR이 계약일·금액·이용기간을 읽습니다.</li>
-    <li><strong>AI 분석</strong> — 자료를 시간순으로 정리하고 모순·부족한 증빙을 짚어 줍니다.</li>
-    <li><strong>결과</strong> — 규칙 엔진이 할부항변 기본요건 충족 여부와 근거를 보여 줍니다.</li>
-    <li><strong>제출자료</strong> — 카드사에 낼 초안을 확인·수정하고 내려받습니다.</li>
-  </ol>
+<section class="home-band">
+  <h2>왜 대응이 늦어질까요</h2>
+  <div class="home-pains">
+    <div class="home-pain">
+      <div class="q">알림 없음</div>
+      <p>가맹점이 닫아도 <strong>알려주는 곳이 없어</strong> 할부금만 계속 빠져나갑니다.</p>
+    </div>
+    <div class="home-pain">
+      <div class="q">기준 모름</div>
+      <p>할부항변에 <strong>어떤 자료가 필요한지</strong> 안내받을 곳이 마땅치 않습니다.</p>
+    </div>
+    <div class="home-pain">
+      <div class="q">정리 부담</div>
+      <p>흩어진 날짜와 금액을 <strong>직접 정리해 설명하기</strong>가 어려워 포기하게 됩니다.</p>
+    </div>
+  </div>
 </section>
 
-<section class="nd-card">
-  <h3>시연 안내</h3>
-  <ul class="small text-muted mb-3">
-    <li>화면에 나오는 카드거래, 계약서, 문자는 모두 시연용 <strong>합성데이터</strong>입니다.</li>
-    <li>가맹점 상태조회는 실제 국세청 API를 호출하지 않고 <strong>API 명세를 따른 합성 응답</strong>을 사용합니다.</li>
-    <li>OCR·AI 호출이 실패해도 화면이 멈추지 않도록 <strong>예비 데이터</strong>로 동작합니다.</li>
-    <li>실제 카드사 접수나 결제취소는 수행하지 않습니다.</li>
-  </ul>
-  <div class="d-flex flex-wrap gap-2">
-    {{ source_badge("합성 카드거래") }}
-    {{ source_badge("API 명세 기반 합성 응답") }}
-    {{ source_badge("실제 OCR 결과") }}
-    {{ source_badge("실제 AI 분석 결과") }}
-    {{ source_badge("규칙 엔진 판정") }}
-    {{ source_badge("예비 데이터") }}
+<section class="home-final">
+  <h2>지금 내 할부 거래부터 확인해 보세요</h2>
+  <p>대표 시나리오로 전체 과정을 2분 안에 볼 수 있습니다.</p>
+  <div class="home-cta justify-content-center">
+    <a class="btn btn-primary" href="{{ url_for('result.demo_start') }}"
+       data-loading="시나리오를 준비하고 있습니다">시작하기</a>
   </div>
-  <p class="small text-muted mt-3 mb-0">
-    각 화면 위쪽에 위와 같은 배지를 표시해, 어떤 값이 실제 기능의 결과이고 어떤 값이 시연용 데이터인지 구분할 수 있게 했습니다.
-  </p>
 </section>
+
+<p class="home-disclosure">
+  화면의 카드거래·계약서·문자는 모두 시연용 합성데이터이며, 실제 접수나 결제취소는 이루어지지 않습니다.<br>
+  각 화면 상단의 배지로 실제 기능 결과와 시연 데이터를 구분해 표시합니다.
+</p>
+
 {% endblock %}
