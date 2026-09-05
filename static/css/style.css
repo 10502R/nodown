@@ -759,3 +759,6 @@ body.home .nd-stage { padding-top: 0; }
 
 /* 선택 결과 요약(다음 단계 안내 화면) */
 .nd-next .nd-next-body { margin-bottom: 1.2rem; }
+
+/* 분석 문장 속 날짜·금액 강조 */
+.nd-em { color: var(--nd-danger); font-weight: 700; }

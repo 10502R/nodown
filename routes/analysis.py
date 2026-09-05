@@ -1,11 +1,34 @@
 # 담당: C
 # LLM 호출, 시간순 분석, 모순/누락 탐지, 제출자료 내용 생성
 
+import re
+
 from flask import Blueprint, redirect, render_template, request, session, url_for
+from markupsafe import Markup, escape
 
 from services import llm_service
 
 analysis_bp = Blueprint("analysis", __name__, url_prefix="/analysis")
+
+
+# 분석 문장에서 금액과 날짜는 소비자가 가장 먼저 확인하는 값이라 눈에 띄게 표시한다.
+# app.py를 고치지 않기 위해 Blueprint의 app_template_filter로 등록한다.
+_HIGHLIGHT = re.compile(
+    r"\d{4}년\s?\d{1,2}월\s?\d{1,2}일"      # 2026년 3월 2일
+    r"|\d{4}-\d{2}-\d{2}"                    # 2026-03-02
+    r"|\d{4}년\s?\d{1,2}월"                   # 2026년 3월
+    r"|\d{1,3}(?:,\d{3})+\s?원"               # 1,200,000원
+    r"|\d+\s?원"                              # 0원
+)
+
+
+@analysis_bp.app_template_filter("highlight_facts")
+def highlight_facts(text):
+    """문장 속 날짜·금액을 강조 표시로 감싼다."""
+    if text is None:
+        return ""
+    safe = str(escape(text))
+    return Markup(_HIGHLIGHT.sub(lambda m: '<b class="nd-em">%s</b>' % m.group(0), safe))
 
 _ANSWER_VALUES = {"yes", "no", "unknown"}
 

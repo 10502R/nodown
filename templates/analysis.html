@@ -122,7 +122,7 @@
           {% for fact in res.confirmedFacts %}
           <li class="list-group-item px-0 py-2 border-0 d-flex align-items-start">
             <i class="bi bi-check-lg text-success me-2 mt-1 flex-shrink-0"></i>
-            <span class="text-dark small">{{ fact }}</span>
+            <span class="text-dark small">{{ fact|highlight_facts }}</span>
           </li>
           {% else %}
           <li class="list-group-item px-0 py-1 border-0 text-muted small">확인된 사실 항목이 없습니다.</li>
@@ -143,7 +143,7 @@
       <div class="accordion-body">
         {% for claim in res.userClaims %}
         <div class="p-2 mb-2 bg-light border-start border-3 border-info rounded-end small text-secondary">
-          "{{ claim }}"
+          "{{ claim|highlight_facts }}"
         </div>
         {% else %}
         <p class="text-muted small mb-0">접수된 소비자 진술이 없습니다.</p>
@@ -165,7 +165,7 @@
           {% for item in res.unresolvedItems %}
           <li class="list-group-item px-0 py-2 border-0 d-flex align-items-start">
             <i class="bi bi-dash text-secondary me-2 flex-shrink-0"></i>
-            <span class="text-muted small">{{ item }}</span>
+            <span class="text-muted small">{{ item|highlight_facts }}</span>
           </li>
           {% else %}
           <li class="list-group-item px-0 py-1 border-0 text-muted small">미확인 사항이 없습니다.</li>
