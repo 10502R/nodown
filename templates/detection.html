@@ -57,6 +57,22 @@
 
   <div id="case-create-message" class="mb-3" aria-live="polite"></div>
 
+  {% if cases %}
+    <h2 class="nd-sec">준비된 사례</h2>
+    <p class="nd-note mb-2">이미 만든 사례입니다. 눌러서 이어서 진행할 수 있어요.</p>
+    <div class="nd-rows">
+      {% for c in cases %}
+        <a class="nd-row" href="{{ url_for('detection.case_detail', case_id=c.case_id) }}">
+          <div class="who">
+            <div class="nm">{{ c.merchant_name }}</div>
+            <div class="sub">{{ c.case_id }}</div>
+          </div>
+          <span class="nd-tag alert">{{ c.merchant_status_label or c.merchant_status }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
   {# 표 여섯 열 대신 한 줄짜리 목록으로 보여준다. 조건 미달 건은 흐리게 두어
      알림 대상이 먼저 눈에 들어오게 한다. 자세한 판정 근거는 사례 상세에 있다. #}
   <h2 class="nd-sec">탐지 결과</h2>
@@ -95,21 +111,6 @@
       <p class="nd-note">거래가 없습니다.</p>
     {% endfor %}
   </div>
-
-  {% if cases %}
-    <h2 class="nd-sec">준비된 사례</h2>
-    <div class="nd-rows">
-      {% for c in cases %}
-        <a class="nd-row" href="{{ url_for('detection.case_detail', case_id=c.case_id) }}">
-          <div class="who">
-            <div class="nm">{{ c.merchant_name }}</div>
-            <div class="sub">{{ c.case_id }}</div>
-          </div>
-          <span class="nd-tag alert">{{ c.merchant_status_label or c.merchant_status }}</span>
-        </a>
-      {% endfor %}
-    </div>
-  {% endif %}
 
   {{ nav_buttons(next_url=url_for('result.card_app'), next_label="알림 보내기") }}
 

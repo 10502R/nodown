@@ -77,7 +77,27 @@ def choose_situation(case_id):
 
     if situation["next"] == "end":
         return redirect(url_for("result.case_guidance", case_id=case_id))
-    return redirect(url_for("result.case_confirm", case_id=case_id, moved=1))
+    # 선택 결과와 다음 행동은 상황 확인 화면에 덧붙이지 않고 별도 화면으로 넘긴다.
+    return redirect(url_for("result.case_next", case_id=case_id))
+
+
+@result_bp.route("/case/<case_id>/next")
+def case_next(case_id):
+    """상황을 고른 다음 무엇을 할지 보여주는 화면이다."""
+    case, source = report_service.load_case(case_id)
+    if case is None:
+        abort(404)
+
+    situation = report_service.get_situation(_situation_key(case_id))
+    if situation is None:
+        return redirect(url_for("result.case_confirm", case_id=case_id))
+    if situation["next"] == "end":
+        return redirect(url_for("result.case_guidance", case_id=case_id))
+
+    return render_template(
+        "case_next.html", case=case, source=source, situation=situation,
+        active_step=3,
+    )
 
 
 @result_bp.route("/case/<case_id>/guidance")

@@ -563,12 +563,11 @@ body.home .nd-stage { padding-top: 0; }
 }
 
 .home-eyebrow {
-  display: inline-flex; align-items: center; gap: .45rem;
+  display: block;
   color: var(--nd-primary);
-  font-size: .84rem; font-weight: 700;
+  font-size: .875rem; font-weight: 700;
   margin-bottom: 1.1rem;
 }
-.home-eyebrow::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--nd-primary); }
 
 .home-hero h1 {
   font-size: clamp(2rem, 4.6vw, 3.05rem);
@@ -584,7 +583,7 @@ body.home .nd-stage { padding-top: 0; }
 }
 
 .home-cta { display: flex; flex-wrap: wrap; gap: .6rem; }
-.home-cta .btn { border-radius: 999px; padding: .85rem 1.9rem; }
+.home-cta .btn { border-radius: 14px; padding: .95rem 1.9rem; }
 .home-cta .btn-outline-secondary { background: #fff; color: var(--nd-text); border-color: var(--nd-border-strong); }
 .home-cta .btn-outline-secondary:hover { background: #fff; border-color: var(--nd-text); color: var(--nd-text); }
 
@@ -741,3 +740,22 @@ body.home .nd-stage { padding-top: 0; }
   .nd-card { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
   a[href]:after { content: ""; }
 }
+
+/* --- 선택 후 다음 행동 안내(상황 확인) --- */
+
+.nd-next {
+  background: var(--nd-primary-soft);
+  border-radius: 20px;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 2rem;
+  max-width: 41rem;
+}
+.nd-next .k { display: block; font-size: .78rem; font-weight: 700; color: var(--nd-primary); margin-bottom: .3rem; }
+.nd-next .v { font-size: 1.15rem; font-weight: 800; letter-spacing: -.02em; }
+.nd-next .g { font-size: .9rem; color: var(--nd-muted); margin: .5rem 0 0; }
+.nd-next-act { display: flex; flex-wrap: wrap; gap: .5rem; }
+.nd-next-act .btn { padding: .75rem 1.4rem; font-size: .95rem; }
+.nd-next-act .btn-outline-secondary { background: #fff; }
+
+/* 선택 결과 요약(다음 단계 안내 화면) */
+.nd-next .nd-next-body { margin-bottom: 1.2rem; }

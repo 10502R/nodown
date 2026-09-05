@@ -28,7 +28,10 @@
       <a class="navbar-brand" href="{{ url_for('index') }}">
         <span class="brand-mark">nd</span> nodown
       </a>
-      <a class="nav-link" href="{{ url_for('index') }}">처음부터</a>
+      {# 흐름 중간에서 빠져나갈 통로. 소개 화면에서는 같은 곳을 가리키므로 숨긴다. #}
+      {% if active_step is defined and active_step %}
+        <a class="nav-link" href="{{ url_for('index') }}">처음부터 다시</a>
+      {% endif %}
     </div>
     {# 진행 과정을 아는 화면에서는 얇은 진행 바로 위치를 함께 보여준다. #}
     {% if active_step is defined and active_step %}

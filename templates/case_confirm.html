@@ -32,7 +32,11 @@
   </div>
 
   <div class="page-nav">
-    <button class="btn btn-primary" type="submit">다음</button>
+    <button class="btn btn-primary" type="submit">{% if situation %}이 선택으로 계속{% else %}다음{% endif %}</button>
+    {% if situation and situation.next == 'evidence' %}
+      <a class="btn btn-outline-secondary" href="{{ url_for('evidence.index', case_id=case.case_id) }}"
+         data-loading="자료 입력 화면을 준비하고 있습니다">자료 입력으로 이동</a>
+    {% endif %}
     <a class="btn btn-outline-secondary" href="{{ url_for('result.card_app') }}">← 앱 알림</a>
   </div>
 </form>
@@ -43,16 +47,4 @@
   고르신 내용은 브라우저 세션에만 저장되며 서버에 사례로 남지 않습니다.
 </p>
 
-{% if situation and situation.next == 'evidence' %}
-  <div class="nd-card">
-    <h3 class="h6">선택하신 상황</h3>
-    <p class="mb-2"><strong>{{ situation.label }}</strong></p>
-    <p class="text-muted mb-3">{{ situation.guidance }}</p>
-    <a class="btn btn-primary" href="{{ url_for('evidence.index', case_id=case.case_id) }}"
-       data-loading="자료 입력 화면을 준비하고 있습니다">자료 입력으로 이동</a>
-    <a class="btn btn-outline-secondary" href="{{ url_for('result.case_result', case_id=case.case_id) }}">
-      먼저 예비 결과 보기
-    </a>
-  </div>
-{% endif %}
 {% endblock %}
