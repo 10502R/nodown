@@ -4,53 +4,50 @@
 {% block title %}소비자 상황 확인{% endblock %}
 
 {% block content %}
-{% call page_head("지금 상황을 확인해 주세요", eyebrow="3단계 · 상황 확인",
-                  desc="해당하는 상황을 하나 고르면 다음 단계가 달라집니다.") %}
+{% call page_head("지금 어떤 상황인가요?", eyebrow="상황 확인",
+                  desc="고르신 내용에 따라 다음에 할 일이 달라져요.") %}
   {{ source_badge(source) }}
 {% endcall %}
 
-<div class="nd-card">
-  <h3 class="h6 mb-3">확인된 거래</h3>
-  <dl class="nd-kv mb-0">
-    <dt>사례번호</dt><dd>{{ case.case_id }}</dd>
-    <dt>가맹점</dt><dd>{{ case.merchant_name }} <span class="text-muted fw-normal">({{ case.merchant_category }})</span></dd>
-    <dt>결제일</dt><dd>{{ case.purchase_date }}</dd>
-    <dt>결제금액</dt><dd>{{ "{:,}".format(case.amount) }}원 · {{ case.installment_months }}개월 할부</dd>
-    <dt>남은 할부금</dt><dd>{{ "{:,}".format(case.remaining_balance) }}원 ({{ case.remaining_installments }}회 남음)</dd>
-    <dt>가맹점 상태</dt>
-    <dd>
-      {{ case.merchant_status_label or case.merchant_status }}
-      {% if case.closed_date %}<span class="text-muted fw-normal">· {{ case.closed_date }}</span>{% endif %}
-    </dd>
-  </dl>
+{# 판단에 필요한 사실만 먼저 보여준다. 나머지 거래 정보는 결과 화면에서 다시 나온다. #}
+<div class="nd-facts">
+  <div class="nd-fact"><span class="k">가맹점</span><span class="v">{{ case.merchant_name }}</span></div>
+  <div class="nd-fact"><span class="k">남은 할부금</span>
+    <span class="v">{{ "{:,}".format(case.remaining_balance) }}원</span></div>
+  <div class="nd-fact"><span class="k">가맹점 상태</span>
+    <span class="v warn">{{ case.merchant_status_label or case.merchant_status }}{% if case.closed_date %} · {{ case.closed_date }}{% endif %}</span></div>
 </div>
 
 <form method="post" action="{{ url_for('result.choose_situation', case_id=case.case_id) }}"
       data-loading="상황을 확인하고 있습니다">
-  <div class="nd-card">
-    <h3 class="h6 mb-3">해당하는 상황을 하나 골라 주세요</h3>
-    <div class="choice-list">
-      {% for choice in choices %}
-        <label class="choice-item {% if selected == choice.key %}selected{% endif %}">
-          <input type="radio" name="situation" value="{{ choice.key }}"
-                 {% if selected == choice.key %}checked{% endif %} required>
-          <span class="choice-label">{{ choice.label }}</span>
-          <p class="choice-hint mb-0">{{ choice.guidance }}</p>
-        </label>
-      {% endfor %}
-    </div>
-    <button class="btn btn-primary w-100 mt-3" type="submit">선택 완료</button>
-    <p class="small text-muted mt-2 mb-0">
-      선택한 내용은 브라우저 세션에만 저장되며 서버에 사례로 남지 않습니다.
-    </p>
+  <div class="choice-list">
+    {% for choice in choices %}
+      <label class="choice-item {% if selected == choice.key %}selected{% endif %}">
+        <input type="radio" name="situation" value="{{ choice.key }}"
+               {% if selected == choice.key %}checked{% endif %} required>
+        <span class="choice-label">{{ choice.label }}</span>
+        <p class="choice-hint mb-0">{{ choice.guidance }}</p>
+      </label>
+    {% endfor %}
+  </div>
+
+  <div class="page-nav">
+    <button class="btn btn-primary" type="submit">다음</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('result.card_app') }}">← 앱 알림</a>
   </div>
 </form>
+
+<p class="nd-note">
+  사례번호 {{ case.case_id }} · {{ case.purchase_date }} 결제
+  · {{ "{:,}".format(case.amount) }}원 · {{ case.installment_months }}개월 할부<br>
+  고르신 내용은 브라우저 세션에만 저장되며 서버에 사례로 남지 않습니다.
+</p>
 
 {% if situation and situation.next == 'evidence' %}
   <div class="nd-card">
     <h3 class="h6">선택하신 상황</h3>
     <p class="mb-2"><strong>{{ situation.label }}</strong></p>
-    <p class="small text-muted mb-3">{{ situation.guidance }}</p>
+    <p class="text-muted mb-3">{{ situation.guidance }}</p>
     <a class="btn btn-primary" href="{{ url_for('evidence.index', case_id=case.case_id) }}"
        data-loading="자료 입력 화면을 준비하고 있습니다">자료 입력으로 이동</a>
     <a class="btn btn-outline-secondary" href="{{ url_for('result.case_result', case_id=case.case_id) }}">
@@ -58,7 +55,4 @@
     </a>
   </div>
 {% endif %}
-
-{{ nav_buttons(prev_url=url_for('result.card_app'), prev_label="앱 알림",
-               next_url=url_for('result.case_result', case_id=case.case_id), next_label="결과 미리보기") }}
 {% endblock %}

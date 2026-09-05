@@ -14,7 +14,7 @@ detection_bp = Blueprint("detection", __name__)
 def index():
     rows = case_service.list_detection_rows()
     cases = case_service.list_detected_cases()
-    return render_template("detection.html", rows=rows, cases=cases)
+    return render_template("detection.html", rows=rows, cases=cases, active_step=1)
 
 
 @detection_bp.route("/detection/<case_id>")
@@ -23,7 +23,7 @@ def case_detail(case_id):
     if case is None:
         abort(404)
     verdict = rule_service.evaluate(case)
-    return render_template("detection.html", case=case, verdict=verdict)
+    return render_template("detection.html", case=case, verdict=verdict, active_step=1)
 
 
 @detection_bp.route("/api/merchant-status/<transaction_id>")

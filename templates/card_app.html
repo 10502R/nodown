@@ -4,27 +4,27 @@
 {% block title %}카드사 앱 알림{% endblock %}
 
 {% block content %}
-{% call page_head("카드사 앱 알림", eyebrow="2단계 · 알림 발송",
-                  desc="탐지된 거래의 소비자에게 보내는 알림입니다. 알림을 누르면 상황 확인으로 넘어갑니다.") %}
+{% call page_head("할부로 결제한 곳이<br>문을 닫았어요"|safe, eyebrow="알림 확인",
+                  desc="카드사가 먼저 찾아낸 거래예요. <b>알림을 눌러</b> 지금 이용이 막혔는지 알려주시면 필요한 자료를 함께 정리해 드릴게요."|safe) %}
   {{ source_badge(source) }}
 {% endcall %}
 
-<div class="phone-frame mb-3">
+<div class="phone-frame">
   <div class="phone-screen">
-    <p class="phone-time mb-2">오후 2:31</p>
-    <span class="sim-tag">카드사 앱 알림 시뮬레이션</span>
+    <p class="phone-time">오후 2:31</p>
 
     {% if cases %}
       {% for case in cases %}
         <a class="push-card" href="{{ url_for('result.case_confirm', case_id=case.case_id) }}"
            data-loading="사례 정보를 불러오고 있습니다">
           <div class="push-app"><span class="dot"></span> nodown 카드 · 지금</div>
-          <p class="push-title">할부 결제 가맹점의 영업 상태가 변경되었습니다</p>
+          <p class="push-title">{{ case.merchant_name }}, 폐업했어요</p>
           <p class="push-body">
-            {{ case.merchant_name }}에서 {{ "{:,}".format(case.amount) }}원
-            {{ case.installment_months }}개월 할부로 결제한 거래가 있습니다.
-            서비스를 정상적으로 이용하고 있는지 확인이 필요합니다.
+            <strong>{{ "{:,}".format(case.amount) }}원</strong>
+            · {{ case.installment_months }}개월 할부
+            · 잔여 {{ "{:,}".format(case.remaining_balance) }}원
           </p>
+          <div class="push-go">확인하기 →</div>
         </a>
       {% endfor %}
     {% else %}
@@ -37,11 +37,9 @@
   </div>
 </div>
 
-<p class="small text-muted text-center mt-3">
-  실제 푸시 발송 대신 웹 화면으로 알림 형태만 재현했습니다.
-</p>
+<p class="nd-note">실제 푸시 발송 대신 웹 화면으로 재현한 알림이에요. 알림을 직접 눌러도 다음 화면으로 넘어갑니다.</p>
 
 {{ nav_buttons(prev_url=url_for('detection.index'), prev_label="거래 탐지",
                next_url=url_for('result.case_confirm', case_id=cases[0].case_id) if cases else None,
-               next_label="상황 확인") }}
+               next_label=(cases[0].merchant_name ~ " 건 확인하기") if cases else "상황 확인") }}
 {% endblock %}

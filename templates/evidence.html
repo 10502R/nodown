@@ -4,9 +4,8 @@
 {% block title %}증빙자료 입력{% endblock %}
 
 {% block content %}
-{% call page_head("증빙자료를 모아 주세요", eyebrow="4단계 · 자료 입력",
-                  desc=("사례 " ~ case.case_id ~ " · " ~ case.merchant_name ~ " 관련 자료를 올리면 계약일·금액·이용기간을 자동으로 읽습니다.") if case
-                       else ("사례 " ~ case_id ~ " 관련 자료를 올리면 계약일·금액·이용기간을 자동으로 읽습니다.")) %}
+{% call page_head("증빙자료를 모아 주세요", eyebrow="자료 입력",
+                  desc="계약서와 문자만 올리면 <b>계약일·금액·이용기간</b>을 알아서 읽어요. 직접 입력할 필요 없어요."|safe) %}
   {{ source_badge(source) }}
 {% endcall %}
 
@@ -20,136 +19,119 @@
   {{ notice("자료를 추가했습니다.", tone="success") }}
 {% endif %}
 
-<details class="nd-card mb-3">
-  <summary class="fw-semibold" style="cursor:pointer">개인정보 처리 안내</summary>
-  <ul class="small text-muted mb-0 mt-2">
+{# 주된 행동(파일 올리기)을 가장 크게 두고, 예시문서·직접입력은 아래에 접어 둔다. #}
+<form class="nd-drop" method="post" action="{{ url_for('evidence.upload', case_id=case_id) }}"
+      enctype="multipart/form-data" data-loading="문서를 인식하고 있습니다">
+  <div class="big">계약서 · 문자 · 안내문을 올려 주세요</div>
+  <p class="small mb-3">
+    {{ allowed_extensions|join(' · ') }} 파일, 최대 {{ max_file_size_mb }}MB까지 올릴 수 있어요.
+  </p>
+  <div class="row g-2 align-items-end">
+    <div class="col-sm-5">
+      <label class="form-label" for="label">문서 종류</label>
+      <input class="form-control" type="text" name="label" id="label" placeholder="예: 이용계약서">
+    </div>
+    <div class="col-sm-7">
+      <label class="form-label" for="file">파일</label>
+      <input class="form-control" type="file" name="file" id="file" required
+             accept="{% for ext in allowed_extensions %}.{{ ext }}{% if not loop.last %},{% endif %}{% endfor %}">
+    </div>
+  </div>
+  <button class="btn btn-primary mt-3" type="submit">올리고 자동으로 읽기</button>
+</form>
+
+<details class="nd-card">
+  <summary class="fw-bold" style="cursor:pointer">가진 자료가 없다면 · 문자를 직접 붙여넣으려면</summary>
+
+  <h4 class="h6 mt-3">예시문서로 체험하기</h4>
+  {% for key, doc in sample_documents.items() %}
+    <div class="d-flex gap-1 mb-2">
+      <form method="post" action="{{ url_for('evidence.sample', case_id=case_id) }}" class="flex-grow-1">
+        <input type="hidden" name="sample_key" value="{{ key }}">
+        <button type="submit" class="btn btn-outline-primary btn-sm w-100">{{ doc.label }} 불러오기</button>
+      </form>
+      <a class="btn btn-outline-primary btn-sm" title="원본 파일({{ doc.file }}) 내려받기"
+         href="{{ url_for('evidence.download_sample', key=key) }}">⬇</a>
+    </div>
+  {% endfor %}
+
+  <h4 class="h6 mt-4">문자 내용 직접 입력</h4>
+  <form method="post" action="{{ url_for('evidence.manual', case_id=case_id) }}">
+    <div class="mb-2">
+      <label class="form-label" for="manual-label">문서 종류</label>
+      <input class="form-control form-control-sm" type="text" name="label" id="manual-label"
+             placeholder="예: 환불 요청 문자">
+    </div>
+    <div class="mb-2">
+      <label class="form-label" for="manual-text">내용</label>
+      <textarea class="form-control form-control-sm" name="text" id="manual-text" rows="4"
+                placeholder="문자 대화나 안내문 내용을 그대로 붙여넣어 주세요"></textarea>
+    </div>
+    <button class="btn btn-outline-primary btn-sm" type="submit">추가</button>
+  </form>
+</details>
+
+<h2 class="nd-sec">올린 자료 {{ documents|length }}건</h2>
+{% if documents %}
+  {% for doc in documents %}
+    <div class="nd-file">
+      <span class="ic">{{ doc.label[:2] if doc.label else "자료" }}</span>
+      <div class="flex-grow-1">
+        <div class="nm">{{ doc.label }}{% if doc.filename %} <span class="text-muted fw-normal">({{ doc.filename }})</span>{% endif %}</div>
+        <div class="st {% if doc.ocr_status == 'ok' %}ok{% endif %}">
+          {% if doc.ocr_status == 'ok' %}계약일·금액 등을 읽었어요
+          {% elif doc.ocr_status == 'failed' %}OCR 인식 실패 · 원문 미확보
+          {% elif doc.ocr_status == 'not_configured' %}OCR 미설정 · 원문 미확보
+          {% elif doc.ocr_status == 'sample' %}예시문서 · 알려진 내용 사용(OCR 미실행)
+          {% else %}직접 입력{% endif %}
+        </div>
+        {% if doc.raw_text %}
+          <details class="small mt-2">
+            <summary class="text-muted">인식된 텍스트 보기</summary>
+            <pre class="bg-light p-2 mt-1 mb-0">{{ doc.raw_text }}</pre>
+          </details>
+        {% endif %}
+      </div>
+      <form method="post" action="{{ url_for('evidence.delete', case_id=case_id, doc_id=doc.id) }}">
+        <button type="submit" class="btn btn-sm btn-outline-danger">삭제</button>
+      </form>
+    </div>
+  {% endfor %}
+{% else %}
+  <p class="nd-note">아직 등록된 자료가 없습니다. 위에서 파일을 올리거나 예시문서를 불러와 주세요.</p>
+{% endif %}
+
+<h2 class="nd-sec">자료에서 읽은 내용</h2>
+<dl class="nd-kv">
+  {% for key in field_keys %}
+    <dt>{{ field_labels[key] }}</dt>
+    <dd>
+      {% set value = fields[key] %}
+      {% if value is none %}
+        <span class="text-muted">확인 안 됨</span>
+      {% elif key == 'contractAmount' %}
+        {{ "{:,}".format(value) }}원
+      {% elif key == 'replacementServiceOffered' %}
+        {{ "제공됨" if value else "제공 안 됨" }}
+      {% else %}
+        {{ value }}
+      {% endif %}
+      {% if field_sources.get(key) %}
+        <span class="text-muted small">· {{ field_sources[key] }}</span>
+      {% endif %}
+    </dd>
+  {% endfor %}
+</dl>
+
+<details class="nd-card">
+  <summary class="fw-bold" style="cursor:pointer">개인정보 처리 안내</summary>
+  <ul class="text-muted mb-0 mt-2">
     {% for text in privacy_notes %}
       <li>{{ text }}</li>
     {% endfor %}
   </ul>
 </details>
 
-<div class="row g-3 mb-3">
-  <div class="col-md-4">
-    <div class="nd-card h-100">
-      <h3 class="h6 mb-2">1. 예시문서 선택</h3>
-      <p class="small text-muted">직접 자료가 없다면 시연용 합성문서를 바로 등록할 수 있습니다.</p>
-      {% for key, doc in sample_documents.items() %}
-        <div class="d-flex gap-1 mb-2">
-          <form method="post" action="{{ url_for('evidence.sample', case_id=case_id) }}" class="flex-grow-1">
-            <input type="hidden" name="sample_key" value="{{ key }}">
-            <button type="submit" class="btn btn-outline-secondary btn-sm w-100">{{ doc.label }} 불러오기</button>
-          </form>
-          <a class="btn btn-outline-secondary btn-sm" title="원본 파일({{ doc.file }}) 내려받기"
-             href="{{ url_for('evidence.download_sample', key=key) }}">⬇</a>
-        </div>
-      {% endfor %}
-    </div>
-  </div>
-
-  <div class="col-md-4">
-    <div class="nd-card h-100">
-      <h3 class="h6 mb-2">2. 파일 업로드 (OCR)</h3>
-      <form method="post" action="{{ url_for('evidence.upload', case_id=case_id) }}"
-            enctype="multipart/form-data" data-loading="문서를 인식하고 있습니다">
-        <div class="mb-2">
-          <label class="form-label small" for="label">문서 종류</label>
-          <input class="form-control form-control-sm" type="text" name="label" id="label"
-                 placeholder="예: 이용계약서">
-        </div>
-        <div class="mb-2">
-          <label class="form-label small" for="file">계약서 / 결제내역 / 이용확인서 등</label>
-          <input class="form-control form-control-sm" type="file" name="file" id="file" required
-                 accept="{% for ext in allowed_extensions %}.{{ ext }}{% if not loop.last %},{% endif %}{% endfor %}">
-        </div>
-        <p class="small text-muted">
-          {{ allowed_extensions|join('/') }} 파일, 최대 {{ max_file_size_mb }}MB까지 업로드할 수 있습니다.
-        </p>
-        <button class="btn btn-primary btn-sm w-100" type="submit">업로드 및 인식</button>
-      </form>
-    </div>
-  </div>
-
-  <div class="col-md-4">
-    <div class="nd-card h-100">
-      <h3 class="h6 mb-2">3. 문자 내용 직접 입력</h3>
-      <form method="post" action="{{ url_for('evidence.manual', case_id=case_id) }}">
-        <div class="mb-2">
-          <label class="form-label small" for="manual-label">문서 종류</label>
-          <input class="form-control form-control-sm" type="text" name="label" id="manual-label"
-                 placeholder="예: 환불 요청 문자">
-        </div>
-        <div class="mb-2">
-          <label class="form-label small" for="manual-text">내용</label>
-          <textarea class="form-control form-control-sm" name="text" id="manual-text" rows="4"
-                    placeholder="문자 대화나 안내문 내용을 그대로 붙여넣어 주세요"></textarea>
-        </div>
-        <button class="btn btn-outline-primary btn-sm w-100" type="submit">추가</button>
-      </form>
-    </div>
-  </div>
-</div>
-
-<div class="nd-card mb-3">
-  <h3 class="h6 mb-3">등록된 자료 ({{ documents|length }}건)</h3>
-  {% if documents %}
-    <div class="list-group">
-      {% for doc in documents %}
-        <div class="list-group-item">
-          <div class="d-flex justify-content-between align-items-start gap-2">
-            <div>
-              <strong>{{ doc.label }}</strong>
-              {% if doc.filename %}<span class="text-muted small">· {{ doc.filename }}</span>{% endif %}
-              <div class="small text-muted">
-                {% if doc.ocr_status == 'ok' %}OCR 인식 완료
-                {% elif doc.ocr_status == 'failed' %}OCR 인식 실패 · 원문 미확보
-                {% elif doc.ocr_status == 'not_configured' %}OCR 미설정 · 원문 미확보
-                {% elif doc.ocr_status == 'sample' %}예시문서 · 알려진 내용 사용(OCR 미실행)
-                {% else %}직접 입력{% endif %}
-              </div>
-            </div>
-            <form method="post" action="{{ url_for('evidence.delete', case_id=case_id, doc_id=doc.id) }}">
-              <button type="submit" class="btn btn-sm btn-outline-danger">삭제</button>
-            </form>
-          </div>
-          {% if doc.raw_text %}
-            <details class="small mt-2">
-              <summary class="text-muted">인식된 텍스트 보기</summary>
-              <pre class="bg-light p-2 mt-1 mb-0">{{ doc.raw_text }}</pre>
-            </details>
-          {% endif %}
-        </div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <p class="text-muted small mb-0">아직 등록된 자료가 없습니다. 위에서 예시문서를 불러오거나 자료를 추가해 주세요.</p>
-  {% endif %}
-</div>
-
-<div class="nd-card mb-3">
-  <h3 class="h6 mb-3">핵심정보 (문서별 출처 포함)</h3>
-  <dl class="nd-kv mb-0">
-    {% for key in field_keys %}
-      <dt>{{ field_labels[key] }}</dt>
-      <dd>
-        {% set value = fields[key] %}
-        {% if value is none %}
-          <span class="text-muted">미확인</span>
-        {% elif key == 'contractAmount' %}
-          {{ "{:,}".format(value) }}원
-        {% elif key == 'replacementServiceOffered' %}
-          {{ "제공됨" if value else "제공 안 됨" }}
-        {% else %}
-          {{ value }}
-        {% endif %}
-        {% if field_sources.get(key) %}
-          <span class="text-muted small">→ 출처: {{ field_sources[key] }}</span>
-        {% endif %}
-      </dd>
-    {% endfor %}
-  </dl>
-</div>
-
 {{ nav_buttons(prev_url=url_for('result.case_confirm', case_id=case_id), prev_label="상황 확인",
-               next_url=url_for('analysis.index', case_id=case_id), next_label="AI 분석") }}
+               next_url=url_for('analysis.index', case_id=case_id), next_label="AI 분석 시작") }}
 {% endblock %}

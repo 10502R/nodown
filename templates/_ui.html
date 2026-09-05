@@ -3,14 +3,12 @@
 
 {# 화면 머리말. 모든 화면이 같은 위계로 제목을 보이게 한다.
    eyebrow: 현재 단계 이름 / title: 화면 제목 / desc: 한 문장 설명(생략 가능)
-   caller(): 오른쪽에 놓을 배지 등을 넘긴다. #}
+   caller(): 제목 아래에 놓을 출처 배지 등을 넘긴다. #}
 {% macro page_head(title, eyebrow=None, desc=None) %}
   <header class="nd-page-head">
-    <div>
-      {% if eyebrow %}<span class="nd-eyebrow">{{ eyebrow }}</span>{% endif %}
-      <h1>{{ title }}</h1>
-      {% if desc %}<p class="nd-page-desc">{{ desc }}</p>{% endif %}
-    </div>
+    {% if eyebrow %}<span class="nd-eyebrow">{{ eyebrow }}</span>{% endif %}
+    <h1>{{ title }}</h1>
+    {% if desc %}<p class="nd-page-desc">{{ desc }}</p>{% endif %}
     {% if caller is defined %}<div class="nd-page-head-aside">{{ caller() }}</div>{% endif %}
   </header>
 {% endmacro %}
@@ -30,34 +28,53 @@
   </span>
 {% endmacro %}
 
-{% macro step_bar(active) %}
+{# 진행 과정. 왼쪽 위에 글씨로만 세운다. 현재 단계만 파랑, 나머지는 회색이다.
+   지나온 단계는 눌러서 되돌아갈 수 있게 링크를 건다. #}
+{% macro step_bar(active, case_id=None) %}
   {%- set steps = [
     ("거래 탐지", 1), ("앱 알림", 2), ("상황 확인", 3), ("자료 입력", 4),
     ("AI 분석", 5), ("결과", 6), ("제출자료", 7)
   ] -%}
+  {%- set minutes = {
+    1: "약 30초", 2: "약 30초", 3: "약 1분", 4: "약 2분",
+    5: "자동 분석", 6: "약 1분", 7: "약 1분"
+  } -%}
+  {%- set cid = case_id or "CASE-001" -%}
+  {%- set links = {
+    1: url_for('detection.index'),
+    2: url_for('result.card_app'),
+    3: url_for('result.case_confirm', case_id=cid),
+    4: url_for('evidence.index', case_id=cid),
+    5: url_for('analysis.index', case_id=cid),
+    6: url_for('result.case_result', case_id=cid),
+    7: url_for('result.submission', case_id=cid)
+  } -%}
   <nav class="step-bar" aria-label="진행 단계">
+    <div class="step-bar-cap">진행 과정</div>
     <ol>
       {% for label, index in steps %}
-        <li class="{% if index < active %}done{% elif index == active %}current{% endif %}">
-          <span class="step-num">{{ index }}</span>
-          <span class="step-label">{{ label }}</span>
+        <li class="{% if index < active %}done{% elif index == active %}current{% endif %}"
+            {% if index == active %}aria-current="step"{% endif %}>
+          {% if index <= active %}<a href="{{ links[index] }}">{{ label }}</a>{% else %}{{ label }}{% endif %}
         </li>
       {% endfor %}
     </ol>
+    <p class="step-bar-foot">7단계 중 {{ active }}단계<br>{{ minutes[active] }} 걸려요</p>
   </nav>
 {% endmacro %}
 
 {% macro notice(text, tone="info") %}
-  <div class="alert alert-{{ tone }} small mb-3">{{ text }}</div>
+  <div class="alert alert-{{ tone }} mb-3">{{ text }}</div>
 {% endmacro %}
 
+{# 화면 아래 이동 버튼. 다음(주요 행동)을 먼저, 이전을 옆에 낮게 둔다. #}
 {% macro nav_buttons(prev_url=None, prev_label="이전", next_url=None, next_label="다음") %}
   <div class="page-nav">
+    {% if next_url %}
+      <a class="btn btn-primary" href="{{ next_url }}" data-loading="다음 화면을 준비하고 있습니다">{{ next_label }}</a>
+    {% endif %}
     {% if prev_url %}
       <a class="btn btn-outline-secondary" href="{{ prev_url }}">← {{ prev_label }}</a>
-    {% else %}<span></span>{% endif %}
-    {% if next_url %}
-      <a class="btn btn-primary" href="{{ next_url }}" data-loading="다음 화면을 준비하고 있습니다">{{ next_label }} →</a>
     {% endif %}
   </div>
 {% endmacro %}

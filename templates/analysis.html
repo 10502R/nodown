@@ -9,7 +9,7 @@
 {% set source_label = "실제 AI 분석 결과" if res.get('_source') == 'ai' else "예비 데이터" %}
 <style>
   .card { margin-bottom: 1.5rem; }
-  .card-header { background-color: #ffffff; border-bottom: 1px solid #f1f3f5; font-weight: 600; padding: 1rem 1.25rem; }
+  .card-header { background-color: #fff; border-bottom: 1px solid var(--nd-border); font-weight: 700; padding: 1rem 1.25rem; }
   .timeline-item { position: relative; padding-left: 2rem; border-left: 2px solid var(--nd-border); margin-bottom: 1.25rem; }
   .timeline-item::before { content: ""; position: absolute; left: -0.45rem; top: 0.25rem; width: 0.8rem; height: 0.8rem; border-radius: 50%; background-color: var(--nd-primary); }
   .summary-box { background-color: #fbfbfc; border: 1px solid var(--nd-border); border-radius: 12px; padding: 1.25rem; white-space: pre-wrap; line-height: 1.6; font-size: 0.95rem; }
@@ -30,7 +30,7 @@
   .followup-answer-options input { margin: 0; }
 
   /* 하단 sticky 바로가기 버튼 */
-  .followup-sticky-bar { position: sticky; bottom: 0; left: 0; right: 0; z-index: 20; background: #fff; border-top: 1px solid #e9ecef; padding: 0.75rem 1rem; margin: 1.5rem -0.01px 1rem; box-shadow: 0 -0.25rem 0.5rem rgba(0, 0, 0, 0.05); }
+  .followup-sticky-bar { position: sticky; bottom: 0; left: 0; right: 0; z-index: 20; background: #fff; border-top: 1px solid var(--nd-border); padding: 0.75rem 1rem; margin: 1.5rem -0.01px 1rem; box-shadow: 0 -0.25rem 0.5rem rgba(0, 0, 0, 0.05); }
 
   @media print {
     .accordion-collapse { display: block !important; }
@@ -39,9 +39,9 @@
 </style>
 
 {# 상단 헤더: 다른 화면과 같은 page_head 형식을 쓴다. #}
-{% call page_head("증빙 AI 정밀 분석",
-                  eyebrow="5단계 · AI 분석 · " ~ (case.case_id if case else "CASE-001"),
-                  desc=(case.merchant_name if case else "올데이 피트니스") ~ " 관련 증빙 문서와 추출 데이터를 대조한 결과입니다.") %}
+{% call page_head("자료를 시간순으로<br>정리했어요"|safe,
+                  eyebrow="AI 분석 · " ~ (case.case_id if case else "CASE-001"),
+                  desc="올려주신 증빙 문서에서 날짜와 금액을 뽑아 순서대로 맞췄어요. 서로 어긋나는 내용이 있으면 아래에 표시됩니다.") %}
   {{ source_badge(source_label) }}
 {% endcall %}
 

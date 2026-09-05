@@ -1,6 +1,5 @@
 {% extends "base.html" %}
-
-{% from "_ui.html" import page_head %}
+{% from "_ui.html" import page_head, nav_buttons %}
 
 {% block title %}거래 탐지{% endblock %}
 
@@ -8,157 +7,111 @@
 {% if case %}
   {% call page_head(case.case_id, eyebrow="거래 탐지 · 사례 상세",
                     desc="폐업이 확인되어 사례로 생성된 거래입니다.") %}
-    <a class="btn btn-outline-secondary" href="{{ url_for('detection.index') }}">전체 거래 보기</a>
+    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('detection.index') }}">전체 거래 보기</a>
   {% endcall %}
 
-  <div class="card shadow-sm mb-4">
-    <div class="card-body">
-      <div class="row g-3">
-        <div class="col-6 col-lg-3">
-          <small class="text-muted d-block">가맹점</small>
-          <strong>{{ case.merchant_name }}</strong>
-        </div>
-        <div class="col-6 col-lg-3">
-          <small class="text-muted d-block">결제금액</small>
-          <strong>{{ "{:,}".format(case.amount) }}원</strong>
-        </div>
-        <div class="col-6 col-lg-3">
-          <small class="text-muted d-block">남은 할부금</small>
-          <strong>{{ "{:,}".format(case.remaining_balance) }}원</strong>
-        </div>
-        <div class="col-6 col-lg-3">
-          <small class="text-muted d-block">가맹점 상태</small>
-          <strong class="text-danger">{{ case.merchant_status_label or case.merchant_status }}</strong>
-        </div>
-      </div>
-    </div>
+  <div class="nd-facts">
+    <div class="nd-fact"><span class="k">가맹점</span><span class="v">{{ case.merchant_name }}</span></div>
+    <div class="nd-fact"><span class="k">결제금액</span><span class="v">{{ "{:,}".format(case.amount) }}원</span></div>
+    <div class="nd-fact"><span class="k">남은 할부금</span><span class="v">{{ "{:,}".format(case.remaining_balance) }}원</span></div>
+    <div class="nd-fact"><span class="k">가맹점 상태</span>
+      <span class="v warn">{{ case.merchant_status_label or case.merchant_status }}</span></div>
   </div>
 
   {% if verdict %}
-    <div class="alert {% if verdict.verdict == '기본요건 충족 가능성 있음' %}alert-success{% elif verdict.verdict == '추가자료 확인 필요' %}alert-warning{% else %}alert-secondary{% endif %} shadow-sm">
-      <h4 class="alert-heading fs-5">{{ verdict.verdict }}</h4>
-      <p class="mb-2">규칙 엔진이 확인한 조건입니다. AI가 법적 권리나 최종 인정 여부를 판정하지 않습니다.</p>
-      <ul class="mb-3">
-        {% for item in verdict.condition_items %}
-          <li>
-            <strong>{{ item.label }}</strong>:
-            {% if item.value is sameas true %}
-              <span class="text-success">충족</span>
-            {% elif item.value is sameas false %}
-              <span class="text-danger">미충족</span>
-            {% else %}
-              <span class="text-warning-emphasis">추가 확인 필요</span>
-            {% endif %}
-          </li>
-        {% endfor %}
-      </ul>
-      <p class="mb-0 text-muted">{{ verdict.final_decision_notice }}</p>
+    <div class="verdict-banner {% if verdict.verdict == '기본요건 충족 가능성 있음' %}verdict-success{% elif verdict.verdict == '추가자료 확인 필요' %}verdict-warning{% else %}verdict-secondary{% endif %}">
+      <p class="verdict-text">{{ verdict.verdict }}</p>
+      <p class="mb-0 mt-2">규칙 엔진이 확인한 조건입니다. AI가 법적 권리나 최종 인정 여부를 판정하지 않습니다.</p>
     </div>
+
+    <h2 class="nd-sec">확인한 조건</h2>
+    <ul class="cond-list">
+      {% for item in verdict.condition_items %}
+        <li class="{% if item.value is sameas true %}cond-pass{% elif item.value is sameas false %}cond-fail{% else %}cond-unknown{% endif %}">
+          <span class="cond-mark">{% if item.value is sameas true %}✓{% elif item.value is sameas false %}×{% else %}?{% endif %}</span>
+          <span>{{ item.label }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+    <p class="nd-note">{{ verdict.final_decision_notice }}</p>
   {% endif %}
 
-  <a class="btn btn-primary" href="{{ url_for('evidence.index', case_id=case.case_id) }}">증빙자료 입력으로 이동</a>
-{% else %}
-  {% call page_head("잠재적 피해 거래 탐지", eyebrow="1단계 · 거래 탐지",
-                    desc="장기할부·잔여 할부금 조건을 통과한 거래만 가맹점 상태를 확인해 알림 대상을 가려냅니다.") %}
-    <span class="badge text-bg-light border">합성 데이터 시연</span>
-  {% endcall %}
+  {{ nav_buttons(prev_url=url_for('detection.index'), prev_label="전체 거래",
+                 next_url=url_for('evidence.index', case_id=case.case_id), next_label="증빙자료 입력으로 이동") }}
 
+{% else %}
   {% set total = rows|length %}
   {% set base_count = rows|selectattr('base_eligible')|list|length %}
   {% set target_count = rows|selectattr('is_alert_target')|list|length %}
-  <div class="nd-stats mb-4">
-    <div class="nd-stat"><span class="k">전체 거래</span><strong class="v">{{ total }}</strong></div>
-    <div class="nd-stat"><span class="k">기본 조건 충족</span><strong class="v">{{ base_count }}</strong></div>
-    <div class="nd-stat is-alert"><span class="k">알림 대상</span><strong class="v">{{ target_count }}</strong></div>
+
+  {% call page_head("폐업한 가맹점의<br>할부 거래를 찾았어요"|safe, eyebrow="거래 탐지",
+                    desc="장기할부이고 할부금이 남았는데 가맹점이 폐업한 거래만 골랐어요. 소비자가 따로 신청하지 않아도 됩니다.") %}
+    <span class="badge text-bg-light border">합성 데이터 시연</span>
+  {% endcall %}
+
+  <div class="nd-facts">
+    <div class="nd-fact"><span class="k">확인한 거래</span><span class="v">{{ total }}건</span></div>
+    <div class="nd-fact"><span class="k">조건 통과</span><span class="v">{{ base_count }}건</span></div>
+    <div class="nd-fact"><span class="k">알림 보낼 거래</span><span class="v warn">{{ target_count }}건</span></div>
   </div>
 
   <div id="case-create-message" class="mb-3" aria-live="polite"></div>
 
-  <div class="table-responsive card shadow-sm">
-    <table class="table table-hover align-middle mb-0">
-      <thead class="table-light">
-        <tr>
-          <th scope="col">거래</th>
-          <th scope="col">결제·할부</th>
-          <th scope="col">필터 조건</th>
-          <th scope="col">가맹점 상태</th>
-          <th scope="col">결과</th>
-          <th scope="col" class="text-end">작업</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in rows %}
-          {% set tx = row.transaction %}
-          <tr>
-            <td>
-              <div class="fw-semibold">{{ tx.merchant_name }}</div>
-              <small class="text-muted">{{ tx.transaction_id }} · {{ tx.merchant_category }}</small>
-            </td>
-            <td>
-              <div>{{ "{:,}".format(tx.amount) }}원</div>
-              <small class="text-muted">{{ tx.installment_months }}개월 · 잔여 {{ "{:,}".format(tx.remaining_balance) }}원</small>
-            </td>
-            <td>
-              {# 조건은 이름 없이 통과/제외 표시만 남겨 표를 읽기 쉽게 한다.
-                 각 칩에 마우스를 올리면 조건 이름과 결과가 그대로 보인다. #}
-              <div class="cond-chips">
-                {% for condition in row.conditions %}
-                  <span class="cond-chip {% if condition.passed %}is-pass{% else %}is-fail{% endif %}"
-                        title="{{ condition.label }}: {% if condition.passed %}충족{% else %}제외{% endif %}">
-                    <span class="mark" aria-hidden="true">{% if condition.passed %}✓{% else %}×{% endif %}</span>
-                    {{ condition.label|replace(" 기준", "")|replace("장기 서비스 ", "") }}
-                  </span>
-                {% endfor %}
-              </div>
-            </td>
-            <td>
-              {% if row.status %}
-                <span class="badge {% if row.status.status == 'closed' %}text-bg-danger{% elif row.status.status == 'open' %}text-bg-success{% else %}text-bg-warning{% endif %}">
-                  {{ row.status.statusLabel }}
-                </span>
-                <small class="d-block text-muted mt-1">합성 조회</small>
-              {% else %}
-                <span class="text-muted">확인 불가</span>
-              {% endif %}
-            </td>
-            <td>
-              <span class="fw-semibold {% if row.is_alert_target %}text-danger{% elif row.base_eligible %}text-warning-emphasis{% else %}text-muted{% endif %}">
-                {{ row.outcome }}
-              </span>
-              {% for reason in row.reasons %}
-                <small class="d-block text-muted">{{ reason }}</small>
-              {% endfor %}
-            </td>
-            <td class="text-end">
-              {% if row.is_alert_target %}
-                <button type="button" class="btn btn-sm btn-danger js-create-case" data-transaction-id="{{ tx.transaction_id }}">
-                  사례 생성
-                </button>
-              {% else %}
-                <span class="text-muted small">생성 불가</span>
-              {% endif %}
-            </td>
-          </tr>
+  {# 표 여섯 열 대신 한 줄짜리 목록으로 보여준다. 조건 미달 건은 흐리게 두어
+     알림 대상이 먼저 눈에 들어오게 한다. 자세한 판정 근거는 사례 상세에 있다. #}
+  <h2 class="nd-sec">탐지 결과</h2>
+  <div class="nd-rows">
+    {% for row in rows %}
+      {% set tx = row.transaction %}
+      <div class="nd-row {% if not row.is_alert_target %}is-muted{% endif %}">
+        <div class="who">
+          <div class="nm">{{ tx.merchant_name }}</div>
+          <div class="sub">
+            {{ tx.merchant_category }} · {{ tx.installment_months }}개월 할부
+            {%- if row.reasons %} · {{ row.reasons[0] }}{% endif %}
+          </div>
+        </div>
+        <div class="amt">
+          {{ "{:,}".format(tx.amount) }}원
+          <small>잔여 {{ "{:,}".format(tx.remaining_balance) }}원</small>
+        </div>
+        {% if row.status %}
+          <span class="nd-tag {% if row.status.status == 'closed' %}alert{% elif row.status.status == 'open' %}ok{% else %}off{% endif %}">
+            {{ row.status.statusLabel }}
+          </span>
         {% else %}
-          <tr><td colspan="6" class="text-center text-muted py-5">거래가 없습니다.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+          <span class="nd-tag off">확인 불가</span>
+        {% endif %}
+        <span style="min-width: 5.5rem; text-align: right">
+          {% if row.is_alert_target %}
+            <button type="button" class="btn btn-sm btn-primary js-create-case"
+                    data-transaction-id="{{ tx.transaction_id }}">사례 생성</button>
+          {% else %}
+            <span class="nd-tag off">대상 아님</span>
+          {% endif %}
+        </span>
+      </div>
+    {% else %}
+      <p class="nd-note">거래가 없습니다.</p>
+    {% endfor %}
   </div>
 
   {% if cases %}
-    <section class="mt-5">
-      <h2 class="h5 mb-3">준비된 사례</h2>
-      <div class="list-group shadow-sm">
-        {% for c in cases %}
-          <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" href="{{ url_for('detection.case_detail', case_id=c.case_id) }}">
-            <span><strong>{{ c.case_id }}</strong> · {{ c.merchant_name }}</span>
-            <span class="badge text-bg-secondary">{{ c.merchant_status_label or c.merchant_status }}</span>
-          </a>
-        {% endfor %}
-      </div>
-    </section>
+    <h2 class="nd-sec">준비된 사례</h2>
+    <div class="nd-rows">
+      {% for c in cases %}
+        <a class="nd-row" href="{{ url_for('detection.case_detail', case_id=c.case_id) }}">
+          <div class="who">
+            <div class="nm">{{ c.merchant_name }}</div>
+            <div class="sub">{{ c.case_id }}</div>
+          </div>
+          <span class="nd-tag alert">{{ c.merchant_status_label or c.merchant_status }}</span>
+        </a>
+      {% endfor %}
+    </div>
   {% endif %}
+
+  {{ nav_buttons(next_url=url_for('result.card_app'), next_label="알림 보내기") }}
 
   <script src="{{ url_for('static', filename='js/detection.js') }}"></script>
 {% endif %}
