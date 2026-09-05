@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+{# 할부항변 신청서(표준 양식) 자동 작성 화면.
+   services/form_context.py가 만든 context dict를 그대로 받아 서식 칸에 채운다.
+   호출하는 라우트는 render_template("submission_form.html", context=<build_form_context 결과>, case_id=<사례번호>)
+   형태로 넘기면 된다(이 화면 자체는 라우트를 새로 만들지 않는다). #}
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>할부항변 신청서 (표준 양식)</title>
+<style>
+  @page { size: A4; margin: 12mm 13mm; }
+
+  :root{
+    --line: #222;
+    --hair: #999;
+    --head: #ececec;
+    --note: #f7f7f7;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin: 0;
+    background: #8b8b8b;
+    font-family: "Malgun Gothic", "맑은 고딕", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    font-size: 9pt;
+    line-height: 1.35;
+    color: #111;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .sheet{
+    width: 210mm;
+    min-height: 297mm;
+    margin: 12px auto;
+    padding: 12mm 13mm;
+    background: #fff;
+  }
+
+  .toolbar{
+    width: 210mm;
+    margin: 14px auto 0;
+    text-align: right;
+  }
+  .toolbar button{
+    font: inherit;
+    padding: 6px 14px;
+    border: 1px solid #444;
+    background: #fff;
+    cursor: pointer;
+  }
+
+  /* ── 머리말 ─────────────────────────────── */
+  .doc-title{
+    border: 2px solid var(--line);
+    padding: 7px 0;
+    text-align: center;
+    font-size: 17pt;
+    font-weight: 700;
+    letter-spacing: 6px;
+    margin-bottom: 5px;
+  }
+  .doc-sub{
+    display: flex;
+    justify-content: space-between;
+    font-size: 8pt;
+    color: #444;
+    margin-bottom: 7px;
+  }
+
+  /* ── 표 공통 ────────────────────────────── */
+  table{
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    margin-bottom: 5px;
+  }
+  th, td{
+    border: 1px solid var(--hair);
+    padding: 3px 5px;
+    vertical-align: middle;
+    word-break: keep-all;
+  }
+  th{
+    background: var(--head);
+    font-weight: 700;
+    text-align: center;
+    font-size: 8.5pt;
+  }
+  td{ height: 20px; }
+  .sec{
+    background: var(--head);
+    font-weight: 700;
+    text-align: center;
+    width: 60px;
+    font-size: 8.5pt;
+    line-height: 1.2;
+  }
+  .sec small{ font-weight: 400; font-size: 7pt; display: block; }
+
+  .band{
+    border: 1px solid var(--line);
+    border-bottom: none;
+    background: var(--head);
+    padding: 3px 6px;
+    font-weight: 700;
+    font-size: 8.5pt;
+  }
+  .band + table{ border-top: none; }
+
+  .cb{ letter-spacing: -0.2px; white-space: nowrap; }
+  .cb i{ font-style: normal; margin-right: 2px; }
+  .cb i[data-checkbox]{ cursor: pointer; }
+  .cb i[data-checkbox]:hover{ text-decoration: underline; }
+  .cb i[data-checkbox]:focus{ outline: 1px dashed #4a90d9; }
+  .cb .blank{
+    display: inline-block;
+    min-width: 8em;
+    border-bottom: 1px solid var(--hair);
+    white-space: pre-wrap;
+  }
+  .cb .blank.blank-lg{ min-width: 14em; }
+  .hint{ font-size: 7.5pt; color: #555; }
+  .u{ color: #bbb; }
+
+  /* ── 서술란 ─────────────────────────────── */
+  .desc{
+    height: 62mm;
+    vertical-align: top;
+    padding: 5px 6px;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 6.2mm,
+        #e6e6e6 6.2mm,
+        #e6e6e6 calc(6.2mm + 1px)
+      );
+  }
+  .desc .guide{ font-size: 7.5pt; color: #666; }
+
+  /* ── 확약·서명 ──────────────────────────── */
+  .pledge{
+    border: 1px solid var(--line);
+    padding: 6px;
+    font-size: 8.5pt;
+    margin-bottom: 5px;
+  }
+  .sign{
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 4px;
+    font-size: 9pt;
+  }
+
+  /* ── 안내사항 ───────────────────────────── */
+  .notice{
+    border: 1px solid var(--hair);
+    background: var(--note);
+    padding: 6px 8px;
+    font-size: 7.5pt;
+    line-height: 1.45;
+    margin-top: 6px;
+  }
+  .notice h4{
+    margin: 0 0 3px;
+    font-size: 8pt;
+  }
+  .notice ul{ margin: 0 0 4px; padding-left: 13px; }
+  .notice li{ margin-bottom: 1px; }
+  .notice .excl{ font-weight: 700; }
+
+  /* ── 수정 가능 칸(화면 전용 표시), 추가 확인 박스 ───────── */
+  [contenteditable="true"]:hover{ background: #fbfbfb; }
+  [contenteditable="true"]:focus{ outline: 1px dashed #4a90d9; background: #fbfbfb; }
+
+  /* 값이 비어 있을 때만 보이는 안내 문구(placeholder). 입력하면 자동으로 사라진다. */
+  .field-hint:empty::before{
+    content: attr(data-hint);
+    color: #999;
+    font-size: 7.5pt;
+  }
+
+  .review-box{
+    width: 210mm;
+    margin: 10px auto 24px;
+    padding: 10px 13mm;
+    background: #fff8e6;
+    border: 1px solid #e0c069;
+    font-size: 9pt;
+  }
+  .review-box h4{ margin: 0 0 6px; font-size: 9.5pt; }
+  .review-box ul{ margin: 0; padding-left: 18px; }
+  .review-box li{ margin-bottom: 2px; }
+
+  @media print{
+    body{ background: #fff; }
+    .toolbar{ display: none; }
+    .review-box{ display: none; }
+    .field-hint:empty::before{ content: none; }
+    .sheet{ margin: 0; padding: 0; width: auto; min-height: 0; }
+  }
+</style>
+</head>
+<body>
+
+{% set context = context|default({}) %}
+
+<div class="toolbar no-print"><button type="button" id="nd-print-btn">인쇄 / PDF 저장</button></div>
+
+<div class="sheet" data-case-id="{{ case_id or '' }}">
+
+  <div class="doc-title">할부 항변 신청서</div>
+  <div class="doc-sub">
+    <span>「할부거래에 관한 법률」 제16조(소비자의 항변권)</span>
+    <span>작성일 <span class="u" contenteditable="true" data-field="issuedAt">20&nbsp;&nbsp;&nbsp;&nbsp;년&nbsp;&nbsp;&nbsp;&nbsp;월&nbsp;&nbsp;&nbsp;&nbsp;일</span></span>
+  </div>
+
+  <!-- 1. 수신 -->
+  <div class="band">1. 수신</div>
+  <table>
+    <colgroup><col style="width:60px"><col style="width:130px"><col><col style="width:80px"><col style="width:110px"></colgroup>
+    <tr>
+      <td class="sec">카드사</td>
+      <th>회사명</th>
+      <td contenteditable="true" data-field="issuer.name">{{ context.get('issuer.name', '') }}</td>
+      <th>접수부서</th>
+      <td contenteditable="true" data-field="issuer.dept">{{ context.get('issuer.dept', '') }}</td>
+    </tr>
+    <tr>
+      <td class="sec">가맹점<small>사본 통지</small></td>
+      <th>상호</th>
+      <td contenteditable="true" data-field="merchant.name">{{ context.get('merchant.name', '') }}</td>
+      <th>사업자번호</th>
+      <td contenteditable="true" data-field="merchant.bizNo">{{ context.get('merchant.bizNo', '') }}</td>
+    </tr>
+    <tr>
+      <td class="sec">&nbsp;</td>
+      <th>주소</th>
+      <td colspan="3" contenteditable="true" data-field="merchant.address">{{ context.get('merchant.address', '') }}</td>
+    </tr>
+  </table>
+
+  <!-- 2. 신청인 -->
+  <div class="band">2. 신청인</div>
+  <table>
+    <colgroup><col style="width:60px"><col style="width:80px"><col><col style="width:80px"><col style="width:150px"></colgroup>
+    <tr>
+      <td class="sec" rowspan="2">본인</td>
+      <th>성명</th>
+      <td contenteditable="true" data-field="applicant.name">{{ context.get('applicant.name', '') }}</td>
+      <th>생년월일</th>
+      <td contenteditable="true" data-field="applicant.birth">{{ context.get('applicant.birth', '') }}</td>
+    </tr>
+    <tr>
+      <th>주소</th>
+      <td contenteditable="true" data-field="applicant.address">{{ context.get('applicant.address', '') }}</td>
+      <th>연락처</th>
+      <td contenteditable="true" data-field="applicant.phone">{{ context.get('applicant.phone', '') }}</td>
+    </tr>
+    <tr>
+      <td class="sec">카드</td>
+      <th>카드번호</th>
+      <td contenteditable="true" data-field="applicant.cardNoMasked" class="field-hint"
+          data-hint="앞 6자리 · 뒤 4자리만 기재 (예: 123456-****-****-7890)">{{ context.get('applicant.cardNoMasked', '') }}</td>
+      <th>결제일</th>
+      <td contenteditable="true" data-field="transaction.billingDay">{{ context.get('transaction.billingDay', '') }}</td>
+    </tr>
+    <tr>
+      <td class="sec">대리인<small>해당 시</small></td>
+      <th>성명</th>
+      <td contenteditable="true" data-field="applicant.agentName">{{ context.get('applicant.agentName', '') }}</td>
+      <th>본인과의 관계</th>
+      <td contenteditable="true" data-field="agent.relation"></td>
+    </tr>
+  </table>
+
+  <!-- 3. 대상 거래 -->
+  <div class="band">3. 대상 거래 내용</div>
+  <table>
+    <colgroup><col style="width:80px"><col><col style="width:80px"><col><col style="width:80px"><col style="width:100px"></colgroup>
+    <tr>
+      <th>거래일자</th><td contenteditable="true" data-field="transaction.date">{{ context.get('transaction.date', '') }}</td>
+      <th>가맹점명</th><td contenteditable="true" data-field="transaction.merchantName">{{ context.get('transaction.merchantName', '') }}</td>
+      <th>업종</th><td contenteditable="true" data-field="transaction.category">{{ context.get('transaction.category', '') }}</td>
+    </tr>
+    <tr>
+      <th>제품[서비스]명</th><td contenteditable="true" data-field="transaction.itemName">{{ context.get('transaction.itemName', '') }}</td>
+      <th>거래금액</th><td contenteditable="true" data-field="transaction.amount">{{ context.get('transaction.amount', '') }}</td>
+      <th>할부기간</th><td contenteditable="true" data-field="transaction.installmentMonths">{{ context.get('transaction.installmentMonths', '') }}</td>
+    </tr>
+    <tr>
+      <th>기납부 금액</th><td contenteditable="true" data-field="transaction.paidAmount">{{ context.get('transaction.paidAmount', '') }}</td>
+      <th>잔여 할부대금</th><td contenteditable="true" data-field="transaction.remainingAmount">{{ context.get('transaction.remainingAmount', '') }}</td>
+      <th>잔여 회차</th><td contenteditable="true" data-field="transaction.remainingMonths">{{ context.get('transaction.remainingMonths', '') }}</td>
+    </tr>
+    {% set channel_value = context.get('transaction.channel', '') or '' %}
+    {% set channel_options = ['매장', '방문판매', '전화', '인터넷'] %}
+    {% set ns_channel = namespace(matched=false) %}
+    <tr>
+      <th>구매유형</th>
+      <td colspan="5" class="cb">
+        {% for option in channel_options %}
+          {% if option in channel_value %}{% set ns_channel.matched = true %}{% endif %}
+          <i role="checkbox" tabindex="0" data-checkbox="transaction.channel::{{ option }}">{{ '■' if option in channel_value else '□' }}</i> {{ option }} &nbsp;&nbsp;
+        {% endfor %}
+        <i role="checkbox" tabindex="0" data-checkbox="transaction.channel::기타">{{ '■' if channel_value and not ns_channel.matched else '□' }}</i> 기타 (<span class="blank" contenteditable="true" data-field="transaction.channelOther">{{ channel_value if channel_value and not ns_channel.matched else '' }}</span>)
+      </td>
+    </tr>
+  </table>
+
+  <!-- 4. 신청 사유 -->
+  <div class="band">4. 신청 사유</div>
+  <table>
+    <colgroup><col style="width:60px"><col><col style="width:60px"><col></colgroup>
+    {% set reason_values = context.get('reasonTypes', []) or [] %}
+    {% set reason_options_row1 = ['부도/폐업/연락불가', '계약불이행', '서비스 미제공', '제품 미수령', '제품하자'] %}
+    {% set reason_options_row2 = ['환불/해약거부', '취소지연', '허위/과장광고', '부당요금청구'] %}
+    {% set ns_reason = namespace(extra=[]) %}
+    {% for v in reason_values %}
+      {% if v not in reason_options_row1 and v not in reason_options_row2 %}{% set ns_reason.extra = ns_reason.extra + [v] %}{% endif %}
+    {% endfor %}
+    <tr>
+      <td class="sec" rowspan="2">사유<br>유형</td>
+      <td colspan="3" class="cb">
+        {% for option in reason_options_row1 %}
+          <i role="checkbox" tabindex="0" data-checkbox="reasonTypes::{{ option }}">{{ '■' if option in reason_values else '□' }}</i> {{ option }} &nbsp;&nbsp;
+        {% endfor %}
+      </td>
+    </tr>
+    <tr>
+      <td colspan="3" class="cb">
+        {% for option in reason_options_row2 %}
+          <i role="checkbox" tabindex="0" data-checkbox="reasonTypes::{{ option }}">{{ '■' if option in reason_values else '□' }}</i> {{ option }} &nbsp;&nbsp;
+        {% endfor %}
+        <i role="checkbox" tabindex="0" data-checkbox="reasonTypes::기타">{{ '■' if ns_reason.extra else '□' }}</i> 기타 (<span class="blank" contenteditable="true" data-field="reasonTypesOther">{{ ns_reason.extra|join(', ') }}</span>)
+      </td>
+    </tr>
+    <tr>
+      <th>계약 체결일</th><td contenteditable="true" data-field="timeline.contractDate">{{ context.get('timeline.contractDate', '') }}</td>
+      <th>서비스 개시일</th><td contenteditable="true" data-field="timeline.serviceStartDate">{{ context.get('timeline.serviceStartDate', '') }}</td>
+    </tr>
+    <tr>
+      <th>서비스 중단일</th><td contenteditable="true" data-field="timeline.serviceStopDate">{{ context.get('timeline.serviceStopDate', '') }}</td>
+      <th>가맹점 통보일</th><td contenteditable="true" data-field="timeline.merchantNoticeDate">{{ context.get('timeline.merchantNoticeDate', '') }}</td>
+    </tr>
+    {% set response_value = context.get('timeline.merchantResponse', '') or '' %}
+    {% set response_options = ['없음', '거부', '일부 환불', '대체 서비스 제안'] %}
+    <tr>
+      <th>환불 요청일</th><td colspan="3" contenteditable="true" data-field="timeline.refundRequestDate">{{ context.get('timeline.refundRequestDate', '') }}</td>
+    </tr>
+    <tr>
+      <td class="sec">가맹점<br>회신</td>
+      <td colspan="3" class="cb">
+        {% for option in response_options %}
+          <i role="checkbox" tabindex="0" data-checkbox="timeline.merchantResponse::{{ option }}">{{ '■' if option in response_value else '□' }}</i> {{ option }} &nbsp;&nbsp;
+        {% endfor %}
+      </td>
+    </tr>
+    <tr>
+      {% set statement_lines = context.get('statement', []) or [] %}
+      <td colspan="4" class="desc" contenteditable="true" data-field="statement">{% if statement_lines %}{{ statement_lines|join('<br>')|safe }}{% else %}<span class="guide">※ 신청 관련 내용(본인 사용 여부, 계약 체결일, 서비스 시행일, 가맹점 해지 통보일, 가맹점과의 분쟁 내용 등)을 시간 순으로 구체적으로 기재합니다.</span>{% endif %}</td>
+    </tr>
+  </table>
+
+  <!-- 5. 첨부자료 -->
+  <div class="band">5. 첨부자료</div>
+  <table>
+    {% set attachment_values = context.get('attachments', []) or [] %}
+    {% set attachment_options_row1 = ['이용계약서 사본', '카드 결제내역', '가맹점과 주고받은 문자·메신저', '환불 요청 기록'] %}
+    {% set attachment_options_row2 = ['출석·예약·이용 기록', '휴·폐업 안내문', '사업자 상태조회 결과'] %}
+    {% set ns_attachment = namespace(extra=[]) %}
+    {% for v in attachment_values %}
+      {% if v not in attachment_options_row1 and v not in attachment_options_row2 %}{% set ns_attachment.extra = ns_attachment.extra + [v] %}{% endif %}
+    {% endfor %}
+    <tr>
+      <td class="cb">
+        {% for option in attachment_options_row1 %}
+          <i role="checkbox" tabindex="0" data-checkbox="attachments::{{ option }}">{{ '■' if option in attachment_values else '□' }}</i> {{ option }} &nbsp;&nbsp;
+        {% endfor %}<br>
+        {% for option in attachment_options_row2 %}
+          <i role="checkbox" tabindex="0" data-checkbox="attachments::{{ option }}">{{ '■' if option in attachment_values else '□' }}</i> {{ option }} &nbsp;&nbsp;
+        {% endfor %}
+        <i role="checkbox" tabindex="0" data-checkbox="attachments::기타">{{ '■' if ns_attachment.extra else '□' }}</i> 기타 (<span class="blank blank-lg" contenteditable="true" data-field="attachmentsOther">{{ ns_attachment.extra|join(', ') }}</span>)
+      </td>
+    </tr>
+  </table>
+
+  <!-- 6. 확약 및 서명 -->
+  <div class="pledge">
+    위 기재 사항에 대해 틀림이 없음을 확약하며, 만약 사실과 다를 경우 이로 인해 발생되는 민·형사상의 모든 책임을 본인이 부담하겠습니다.
+  </div>
+  <div class="sign">
+    <span class="u" contenteditable="true" data-field="signDate">20&nbsp;&nbsp;&nbsp;&nbsp;년&nbsp;&nbsp;&nbsp;&nbsp;월&nbsp;&nbsp;&nbsp;&nbsp;일</span>
+    <span>신청인 <span class="u" contenteditable="true" data-field="signApplicantName">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> (서명 또는 인)</span>
+    <span>대리인 <span class="u" contenteditable="true" data-field="signAgentName">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span> (서명 또는 인)</span>
+  </div>
+
+  <!-- 7. 안내사항 -->
+  <div class="notice">
+    <h4>신청 전 안내사항</h4>
+    <ul>
+      <li>신용카드 할부거래 시 「할부거래에 관한 법률」 제16조에 따라 할부계약이 이행되지 않는 등 항변권 사유에 해당할 경우, 잔여 할부대금의 납부를 거절할 수 있습니다.</li>
+      <li class="excl">아래 항목에 하나 이상 해당하는 거래에는 할부항변이 적용되지 않으므로, 신청 전 대상거래 적용 여부를 확인하시기 바랍니다.</li>
+      <li>① 일시불 거래 &nbsp;② 3개월 미만 할부거래 &nbsp;③ 20만원 미만 할부거래 &nbsp;④ 리볼빙 이용금액 &nbsp;⑤ 일시불거래 분할납부(할부전환) 매출<br>⑥ 상행위를 목적으로 체결한 할부거래(예: 다단계, 광고, 홈페이지 제작 등) &nbsp;⑦ 그 밖에 「할부거래에 관한 법률」 및 동 시행령에서 정하는 법 적용 제외 거래</li>
+      <li>카드사는 관련법령에 따라 신청내용을 검토한 후 수용 또는 수용불가로 답변합니다. 수용불가 시 소비자가 정당한 사유로 이에 불복하는 경우 한국소비자원에 분쟁조정을 신청할 수 있습니다.</li>
+      <li>이와 별도로 판매자의 부당행위에 대하여는 한국소비자원을 통하여 피해구제를 신청할 수 있습니다. (www.kca.go.kr, 국번없이 1372)</li>
+      <li>본 양식은 카드사 공통 기재항목을 정리한 표준 서식입니다. 카드사에 따라 자체 서식 사용을 요구할 수 있으므로, 접수 전 해당 카드사의 공식 접수 경로를 확인하시기 바랍니다.</li>
+    </ul>
+  </div>
+
+</div>
+
+{% set unverified_labels = {
+  'issuer.name': '카드사명', 'issuer.dept': '접수부서',
+  'merchant.name': '가맹점 상호', 'merchant.bizNo': '가맹점 사업자번호', 'merchant.address': '가맹점 주소',
+  'applicant.name': '신청인 성명', 'applicant.birth': '신청인 생년월일', 'applicant.address': '신청인 주소',
+  'applicant.phone': '신청인 연락처', 'applicant.cardNoMasked': '카드번호', 'applicant.agentName': '대리인 성명',
+  'transaction.date': '거래일자', 'transaction.merchantName': '거래 가맹점명', 'transaction.category': '업종',
+  'transaction.itemName': '제품/서비스명', 'transaction.amount': '거래금액',
+  'transaction.installmentMonths': '할부기간', 'transaction.paidAmount': '기납부 금액',
+  'transaction.remainingAmount': '잔여 할부대금', 'transaction.remainingMonths': '잔여 회차',
+  'transaction.billingDay': '결제일', 'transaction.channel': '구매유형', 'reasonTypes': '신청 사유',
+  'timeline.contractDate': '계약 체결일', 'timeline.serviceStartDate': '서비스 개시일',
+  'timeline.serviceStopDate': '서비스 중단일', 'timeline.merchantNoticeDate': '가맹점 통보일',
+  'timeline.refundRequestDate': '환불 요청일', 'timeline.merchantResponse': '가맹점 회신',
+  'attachments': '첨부자료',
+} %}
+{% set unverified_fields = context.get('unverifiedFields', []) or [] %}
+{% if unverified_fields %}
+<div class="review-box no-print">
+  <h4>추가 확인이 필요한 항목</h4>
+  <p class="hint">증빙으로 아직 확인되지 않아 빈칸으로 남겨 두었습니다. 서식 안에서 해당 칸을 직접 채워 주세요. (인쇄 시 이 안내는 표시되지 않습니다.)</p>
+  <ul>
+    {% for key in unverified_fields %}
+      <li>{{ unverified_labels.get(key, key) }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/submission.js') }}"></script>
+</body>
+</html>

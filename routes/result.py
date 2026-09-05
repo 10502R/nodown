@@ -17,7 +17,7 @@ from flask import (
     url_for,
 )
 
-from services import report_service
+from services import form_context, report_service
 
 result_bp = Blueprint("result", __name__)
 
@@ -181,6 +181,22 @@ def download(case_id):
         download_name="{0}_submission_draft.txt".format(case_id),
         mimetype="text/plain; charset=utf-8",
     )
+
+
+@result_bp.route("/case/<case_id>/submission-form")
+def submission_form(case_id):
+    """할부항변 신청서(표준 양식) 자동 작성 화면."""
+    case, _ = report_service.load_case(case_id)
+    if case is None:
+        abort(404)
+
+    documents = _evidence_documents(case_id)
+    case = report_service.apply_situation(case, _situation_key(case_id)) or case
+    case = report_service.apply_evidence(case, documents) or case
+
+    evidence = form_context.build_evidence_from_case(case, documents)
+    context = form_context.build_form_context(evidence)
+    return render_template("submission_form.html", context=context, case_id=case_id)
 
 
 @result_bp.route("/case/<case_id>/print")
