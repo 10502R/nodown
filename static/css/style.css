@@ -42,12 +42,14 @@ h3 { font-size: clamp(1.1rem, 3vw, 1.3rem); }
 
 /* --- 상단 --- */
 
+/* 시연 고지는 읽히되 화면을 가리지 않을 만큼만 눈에 띄게 한다. */
 .demo-ribbon {
-  background: #2b3040;
-  color: #f2f4f8;
-  font-size: .8rem;
-  padding: .45rem 1rem;
+  background: #f0f1f4;
+  color: var(--nd-muted);
+  font-size: .74rem;
+  padding: .32rem 1rem;
   text-align: center;
+  border-bottom: 1px solid var(--nd-border);
 }
 
 .app-navbar {
@@ -122,7 +124,7 @@ h3 { font-size: clamp(1.1rem, 3vw, 1.3rem); }
 
 .nd-card h3, .nd-card h4 { margin-bottom: .75rem; }
 
-.nd-kv { display: grid; grid-template-columns: 8rem 1fr; gap: .35rem 1rem; font-size: .95rem; }
+.nd-kv { display: grid; grid-template-columns: 9.5rem 1fr; gap: .35rem 1rem; font-size: .95rem; }
 .nd-kv dt { color: var(--nd-muted); font-weight: 500; }
 .nd-kv dd { margin: 0; font-weight: 600; }
 
@@ -352,9 +354,6 @@ h3 { font-size: clamp(1.1rem, 3vw, 1.3rem); }
 
 body.home main.container { max-width: 1120px; padding-top: 0; }
 
-/* 시연 고지는 메인에서 눈에 덜 띄게 낮춘다. */
-body.home .demo-ribbon { background: #f0f1f4; color: #6b7280; font-size: .74rem; padding: .3rem 1rem; }
-
 /* --- 히어로 --- */
 
 .home-hero {
@@ -569,3 +568,191 @@ body.home .demo-ribbon { background: #f0f1f4; color: #6b7280; font-size: .74rem;
   .home-phone { width: 100%; max-width: 320px; }
   .home-section { padding-top: 2.8rem; }
 }
+
+/* =======================================================================
+   담당: D — 전 화면 공통 디자인 레이어.
+   메인 화면에서 정한 톤(넉넉한 여백, 부드러운 모서리, 절제된 색)을
+   부트스트랩 기본 컴포넌트에도 그대로 적용한다.
+   화면별 템플릿을 고치지 않아도 여기서 한 번에 통일된다.
+   ======================================================================= */
+
+/* --- 상단 내비게이션 --- */
+
+.app-navbar { padding-top: .55rem; padding-bottom: .55rem; }
+.app-navbar .navbar-brand { font-size: 1.12rem; letter-spacing: -.02em; }
+.app-navbar .brand-mark { width: 26px; height: 26px; font-size: .78rem; }
+.app-navbar .nav-link {
+  font-weight: 600;
+  padding-left: .8rem; padding-right: .8rem;
+  border-radius: 8px;
+}
+.app-navbar .nav-link:hover { background: #f4f6fb; }
+
+/* --- 화면 머리말(page_head 매크로) --- */
+
+.nd-page-head {
+  display: flex; flex-wrap: wrap; align-items: flex-end;
+  justify-content: space-between; gap: 1rem;
+  padding-bottom: 1.1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--nd-border);
+}
+.nd-page-head .nd-eyebrow {
+  display: block;
+  color: var(--nd-primary);
+  font-size: .8rem; font-weight: 700; letter-spacing: .02em;
+  margin-bottom: .3rem;
+}
+.nd-page-head h1 {
+  font-size: clamp(1.35rem, 3.2vw, 1.75rem);
+  letter-spacing: -.02em;
+  margin: 0;
+}
+.nd-page-head .nd-page-desc {
+  color: var(--nd-muted);
+  font-size: .93rem;
+  margin: .45rem 0 0;
+  max-width: 44rem;
+}
+.nd-page-head-aside { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
+
+/* --- 카드 --- */
+
+.nd-card { padding: 1.5rem; margin-bottom: 1.25rem; border-radius: 16px; }
+.nd-card > h3:first-child, .nd-card > h4:first-child { margin-top: 0; }
+.nd-card h3, .nd-card .h6 { letter-spacing: -.01em; }
+
+/* 부트스트랩 .card도 같은 톤으로 맞춘다. */
+.card {
+  border: 1px solid var(--nd-border);
+  border-radius: 16px;
+  box-shadow: var(--nd-shadow);
+}
+.card-body { padding: 1.35rem; }
+
+/* 숫자 요약 카드의 수치는 조금 더 조인다. */
+.fs-3.fw-bold { letter-spacing: -.03em; }
+
+/* --- 버튼 --- */
+
+.btn {
+  border-radius: 10px;
+  font-weight: 600;
+  padding: .55rem 1.15rem;
+}
+.btn-lg { border-radius: 12px; padding: .8rem 1.6rem; }
+.btn-sm { border-radius: 8px; padding: .35rem .75rem; }
+.btn-primary { background: var(--nd-primary); border-color: var(--nd-primary); }
+.btn-primary:hover, .btn-primary:focus { background: var(--nd-primary-dark); border-color: var(--nd-primary-dark); }
+.btn-outline-secondary {
+  background: #fff;
+  border-color: var(--nd-border);
+  color: var(--nd-text);
+}
+.btn-outline-secondary:hover, .btn-outline-secondary:focus {
+  background: #f7f9ff;
+  border-color: var(--nd-primary);
+  color: var(--nd-primary);
+}
+.btn-outline-primary { border-color: var(--nd-primary); color: var(--nd-primary); }
+.btn-outline-primary:hover { background: var(--nd-primary); border-color: var(--nd-primary); }
+.btn:focus-visible { box-shadow: 0 0 0 3px rgba(31, 79, 216, .2); }
+
+/* --- 입력 --- */
+
+.form-control, .form-select, .draft-section textarea {
+  border-radius: 10px;
+  border-color: var(--nd-border);
+  padding: .55rem .8rem;
+}
+.form-control:focus, .form-select:focus, .draft-section textarea:focus {
+  border-color: var(--nd-primary);
+  box-shadow: 0 0 0 3px rgba(31, 79, 216, .12);
+  outline: none;
+}
+.form-label { font-weight: 600; color: var(--nd-text); margin-bottom: .3rem; }
+
+/* --- 표 --- */
+
+.table { --bs-table-border-color: var(--nd-border); margin-bottom: 0; }
+.table > thead th {
+  background: #f7f8fa;
+  color: var(--nd-muted);
+  font-size: .82rem;
+  font-weight: 700;
+  letter-spacing: .01em;
+  border-bottom: 1px solid var(--nd-border);
+  padding: .75rem .9rem;
+  white-space: nowrap;
+}
+.table > tbody td { padding: .85rem .9rem; vertical-align: middle; }
+.table-hover > tbody > tr:hover > * { background: #f7f9ff; }
+.table-responsive.card { overflow: hidden; }
+
+/* --- 목록 --- */
+
+.list-group { border-radius: 14px; overflow: hidden; }
+.list-group-item { border-color: var(--nd-border); padding: .95rem 1.1rem; }
+.list-group-item-action:hover { background: #f7f9ff; }
+
+/* --- 알림/배지 --- */
+
+.alert { border-radius: 14px; border-width: 1px; }
+.badge { font-weight: 600; border-radius: 999px; padding: .35em .7em; }
+
+/* --- 단계 표시 --- */
+
+.step-bar-wrap { padding-top: 1.25rem; }
+.step-bar li { padding: .35rem .8rem; font-size: .83rem; }
+
+/* --- 이동 버튼 --- */
+
+.page-nav { margin-top: 2.25rem; padding-top: 1.5rem; border-top: 1px solid var(--nd-border); }
+
+/* --- 하단 --- */
+
+.app-footer { margin-top: 3rem; padding: 2rem 0 2.5rem; }
+
+/* --- 요약 수치(거래 탐지) --- */
+
+.nd-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  background: #fff;
+  border: 1px solid var(--nd-border);
+  border-radius: 16px;
+  box-shadow: var(--nd-shadow);
+  overflow: hidden;
+}
+.nd-stat {
+  padding: 1.15rem 1.35rem;
+  border-right: 1px solid var(--nd-border);
+}
+.nd-stat:last-child { border-right: 0; }
+.nd-stat .k { display: block; font-size: .82rem; color: var(--nd-muted); margin-bottom: .2rem; }
+.nd-stat .v { font-size: 1.75rem; font-weight: 700; letter-spacing: -.03em; line-height: 1.2; }
+.nd-stat.is-alert .v { color: var(--nd-danger); }
+
+@media (max-width: 576px) {
+  .nd-stats { grid-template-columns: 1fr; }
+  .nd-stat { border-right: 0; border-bottom: 1px solid var(--nd-border); }
+  .nd-stat:last-child { border-bottom: 0; }
+  .nd-page-head { align-items: flex-start; }
+}
+
+/* --- 조건 통과 칩(거래 탐지 표) --- */
+
+.cond-chips { display: flex; flex-wrap: wrap; gap: .25rem; max-width: 15rem; }
+.cond-chip {
+  display: inline-flex; align-items: center; gap: .2rem;
+  border-radius: 999px;
+  padding: .12rem .5rem;
+  font-size: .74rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.cond-chip .mark { font-weight: 700; }
+.cond-chip.is-pass { background: #eaf5ef; color: var(--nd-success); border-color: #cfe7db; }
+.cond-chip.is-fail { background: #f4f5f7; color: var(--nd-muted); border-color: var(--nd-border); }

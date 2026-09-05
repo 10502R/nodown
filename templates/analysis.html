@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_ui.html" import source_badge, nav_buttons %}
+{% from "_ui.html" import source_badge, nav_buttons, page_head %}
 
 {% block title %}AI 증빙 분석 결과 리포트{% endblock %}
 
@@ -8,18 +8,18 @@
 {% set saved_answers = saved_answers if saved_answers is defined else None %}
 {% set source_label = "실제 AI 분석 결과" if res.get('_source') == 'ai' else "예비 데이터" %}
 <style>
-  .card { border-radius: 0.75rem; border: 1px solid #e9ecef; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem; }
+  .card { margin-bottom: 1.5rem; }
   .card-header { background-color: #ffffff; border-bottom: 1px solid #f1f3f5; font-weight: 600; padding: 1rem 1.25rem; }
-  .timeline-item { position: relative; padding-left: 2rem; border-left: 2px solid #dee2e6; margin-bottom: 1.25rem; }
-  .timeline-item::before { content: ""; position: absolute; left: -0.45rem; top: 0.25rem; width: 0.8rem; height: 0.8rem; border-radius: 50%; background-color: #0d6efd; }
-  .summary-box { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.5rem; padding: 1.25rem; white-space: pre-wrap; line-height: 1.6; font-size: 0.95rem; }
+  .timeline-item { position: relative; padding-left: 2rem; border-left: 2px solid var(--nd-border); margin-bottom: 1.25rem; }
+  .timeline-item::before { content: ""; position: absolute; left: -0.45rem; top: 0.25rem; width: 0.8rem; height: 0.8rem; border-radius: 50%; background-color: var(--nd-primary); }
+  .summary-box { background-color: #fbfbfc; border: 1px solid var(--nd-border); border-radius: 12px; padding: 1.25rem; white-space: pre-wrap; line-height: 1.6; font-size: 0.95rem; }
 
   /* 상단 요약 바 */
-  .analysis-summary-bar { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 0.75rem; padding: 0.9rem 1.1rem; margin-bottom: 1.25rem; }
+  .analysis-summary-bar { background-color: #fff; border: 1px solid var(--nd-border); border-radius: 14px; padding: 0.9rem 1.1rem; margin-bottom: 1.25rem; }
   .analysis-summary-bar .badge { font-size: 0.85rem; padding: 0.5rem 0.75rem; }
 
   /* 아코디언 (세로 스크롤 구조) */
-  #analysisAccordion .accordion-item { border-radius: 0.75rem; border: 1px solid #e9ecef; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.04); margin-bottom: 1rem; overflow: hidden; }
+  #analysisAccordion .accordion-item { border-radius: 14px; border: 1px solid var(--nd-border); box-shadow: var(--nd-shadow); margin-bottom: .75rem; overflow: hidden; }
   #analysisAccordion .accordion-button { font-weight: 600; padding: 1rem 1.25rem; }
   #analysisAccordion .accordion-button:focus { box-shadow: none; }
   #analysisAccordion .accordion-body { padding: 1.25rem; }
@@ -38,21 +38,12 @@
   }
 </style>
 
-<!-- 상단 헤더 섹션 -->
-<div class="d-flex flex-wrap justify-content-between align-items-center pb-3 mb-3 border-bottom">
-  <div>
-    <div class="d-flex align-items-center gap-2 flex-wrap">
-      <h2 class="h4 mb-0 fw-bold">거래/이용 내역 및 증빙 AI 정밀 분석</h2>
-      <span class="badge bg-secondary">{% if case %}{{ case.case_id }}{% else %}CASE-001{% endif %}</span>
-      <span class="badge bg-warning text-dark"><i class="bi bi-shield-exclamation me-1"></i>시연용 합성 데이터</span>
-      {{ source_badge(source_label) }}
-    </div>
-    <p class="text-muted small mb-0 mt-1">가맹점: <strong>{% if case %}{{ case.merchant_name }}{% else %}올데이 피트니스{% endif %}</strong> | 제출된 증빙 문서와 추출 데이터를 대조 분석한 결과입니다.</p>
-  </div>
-  <div class="mt-2 mt-md-0">
-    <span class="badge bg-light text-secondary border px-3 py-2"><i class="bi bi-clock me-1"></i>분석 완료 (8개 핵심 항목 검토)</span>
-  </div>
-</div>
+{# 상단 헤더: 다른 화면과 같은 page_head 형식을 쓴다. #}
+{% call page_head("증빙 AI 정밀 분석",
+                  eyebrow="5단계 · AI 분석 · " ~ (case.case_id if case else "CASE-001"),
+                  desc=(case.merchant_name if case else "올데이 피트니스") ~ " 관련 증빙 문서와 추출 데이터를 대조한 결과입니다.") %}
+  {{ source_badge(source_label) }}
+{% endcall %}
 
 {# 상단 요약 바: 모순 / 부족한 증빙 / 확인 질문 수를 한 줄로 파악 #}
 {% set contradiction_list = res.contradictions or [] %}

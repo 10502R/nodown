@@ -1,5 +1,19 @@
 {# 담당: D — 팀 공통 UI 조각. 다른 화면에서 import해서 쓴다.
-   사용법: {% from "_ui.html" import source_badge, step_bar, notice %} #}
+   사용법: {% from "_ui.html" import source_badge, step_bar, notice, page_head %} #}
+
+{# 화면 머리말. 모든 화면이 같은 위계로 제목을 보이게 한다.
+   eyebrow: 현재 단계 이름 / title: 화면 제목 / desc: 한 문장 설명(생략 가능)
+   caller(): 오른쪽에 놓을 배지 등을 넘긴다. #}
+{% macro page_head(title, eyebrow=None, desc=None) %}
+  <header class="nd-page-head">
+    <div>
+      {% if eyebrow %}<span class="nd-eyebrow">{{ eyebrow }}</span>{% endif %}
+      <h1>{{ title }}</h1>
+      {% if desc %}<p class="nd-page-desc">{{ desc }}</p>{% endif %}
+    </div>
+    {% if caller is defined %}<div class="nd-page-head-aside">{{ caller() }}</div>{% endif %}
+  </header>
+{% endmacro %}
 
 {% macro source_badge(source, extra="") %}
   {%- set tone = {

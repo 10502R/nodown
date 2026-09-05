@@ -1,21 +1,14 @@
 {% extends "base.html" %}
-{% from "_ui.html" import source_badge, notice, nav_buttons %}
+{% from "_ui.html" import source_badge, notice, nav_buttons, page_head %}
 
 {% block title %}증빙자료 입력{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-  <div>
-    <p class="text-primary fw-semibold mb-1">B 담당 · 자료 입력</p>
-    <h1 class="h3 mb-0">증빙자료를 모아 주세요</h1>
-  </div>
+{% call page_head("증빙자료를 모아 주세요", eyebrow="4단계 · 자료 입력",
+                  desc=("사례 " ~ case.case_id ~ " · " ~ case.merchant_name ~ " 관련 자료를 올리면 계약일·금액·이용기간을 자동으로 읽습니다.") if case
+                       else ("사례 " ~ case_id ~ " 관련 자료를 올리면 계약일·금액·이용기간을 자동으로 읽습니다.")) %}
   {{ source_badge(source) }}
-</div>
-
-<p class="text-muted small mb-3">
-  {% if case %}사례번호 {{ case.case_id }} · {{ case.merchant_name }} 관련 자료를 입력합니다.
-  {% else %}사례번호 {{ case_id }}에 대한 자료를 입력합니다.{% endif %}
-</p>
+{% endcall %}
 
 {% if error %}
   {{ notice(error, tone="danger") }}
@@ -27,14 +20,14 @@
   {{ notice("자료를 추가했습니다.", tone="success") }}
 {% endif %}
 
-<div class="nd-card mb-3">
-  <h3 class="h6 mb-2">개인정보 안내</h3>
-  <ul class="small text-muted mb-0">
+<details class="nd-card mb-3">
+  <summary class="fw-semibold" style="cursor:pointer">개인정보 처리 안내</summary>
+  <ul class="small text-muted mb-0 mt-2">
     {% for text in privacy_notes %}
       <li>{{ text }}</li>
     {% endfor %}
   </ul>
-</div>
+</details>
 
 <div class="row g-3 mb-3">
   <div class="col-md-4">

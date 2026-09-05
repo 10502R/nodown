@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_ui.html" import source_badge, nav_buttons %}
+{% from "_ui.html" import source_badge, nav_buttons, page_head %}
 
 {% block title %}기본요건 확인 결과{% endblock %}
 
@@ -8,14 +8,11 @@
 {% set case = result.case %}
 {% set verdict = result.verdict %}
 
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-  <h1 class="h3 mb-0">기본요건 확인 결과 · {{ case.case_id }}</h1>
-  <div class="d-flex flex-wrap gap-1">
-    {{ source_badge(result.case_source) }}
-    {{ source_badge(result.verdict_source) }}
-    {{ source_badge(result.analysis_source) }}
-  </div>
-</div>
+{% call page_head("기본요건 확인 결과", eyebrow="6단계 · 결과 · " ~ case.case_id,
+                  desc="규칙 엔진이 확인한 조건과 근거입니다. 최종 인정 여부는 카드사가 심사합니다.") %}
+  {{ source_badge(result.verdict_source) }}
+  {{ source_badge(result.analysis_source) }}
+{% endcall %}
 
 <div class="verdict-banner verdict-{{ result.verdict_tone }} mb-3">
   <p class="verdict-text">{{ verdict.verdict }}</p>

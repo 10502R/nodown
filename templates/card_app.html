@@ -1,18 +1,13 @@
 {% extends "base.html" %}
-{% from "_ui.html" import source_badge, nav_buttons %}
+{% from "_ui.html" import source_badge, nav_buttons, page_head %}
 
 {% block title %}카드사 앱 알림{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-  <h1 class="h3 mb-0">카드사 앱 알림</h1>
+{% call page_head("카드사 앱 알림", eyebrow="2단계 · 알림 발송",
+                  desc="탐지된 거래의 소비자에게 보내는 알림입니다. 알림을 누르면 상황 확인으로 넘어갑니다.") %}
   {{ source_badge(source) }}
-</div>
-
-<p class="text-muted">
-  카드사가 탐지한 거래의 소비자에게 앱 알림을 보내는 단계입니다.
-  알림을 누르면 해당 사례의 상황 확인 화면으로 이동합니다.
-</p>
+{% endcall %}
 
 <div class="phone-frame mb-3">
   <div class="phone-screen">
@@ -42,14 +37,9 @@
   </div>
 </div>
 
-<div class="nd-card">
-  <h3 class="h6">이 화면에 대한 안내</h3>
-  <ul class="small text-muted mb-0">
-    <li>실제 푸시 발송이나 네이티브 앱은 구현하지 않았습니다. 웹 화면으로 알림 형태만 재현했습니다.</li>
-    <li>알림에 표시된 거래는 거래 탐지 단계에서 <strong>알림 대상</strong>으로 판정된 합성 거래입니다.</li>
-    <li>알림을 누르면 사례 ID가 이후 화면까지 그대로 유지됩니다.</li>
-  </ul>
-</div>
+<p class="small text-muted text-center mt-3">
+  실제 푸시 발송 대신 웹 화면으로 알림 형태만 재현했습니다.
+</p>
 
 {{ nav_buttons(prev_url=url_for('detection.index'), prev_label="거래 탐지",
                next_url=url_for('result.case_confirm', case_id=cases[0].case_id) if cases else None,

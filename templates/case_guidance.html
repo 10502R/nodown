@@ -1,13 +1,12 @@
 {% extends "base.html" %}
-{% from "_ui.html" import source_badge, nav_buttons %}
+{% from "_ui.html" import source_badge, nav_buttons, page_head %}
 
 {% block title %}안내{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-  <h1 class="h3 mb-0">이번 거래는 할부항변 대상이 아닙니다</h1>
+{% call page_head("이번 거래는 할부항변 대상이 아닙니다", eyebrow="상황 확인 결과") %}
   {{ source_badge(source) }}
-</div>
+{% endcall %}
 
 <div class="verdict-banner verdict-secondary mb-3">
   <p class="verdict-text">{{ situation.label if situation else "선택하신 상황" }}</p>

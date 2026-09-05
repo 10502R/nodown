@@ -1,17 +1,15 @@
 {% extends "base.html" %}
 
+{% from "_ui.html" import page_head %}
+
 {% block title %}거래 탐지{% endblock %}
 
 {% block content %}
 {% if case %}
-  <div class="d-flex justify-content-between align-items-start mb-4 gap-3">
-    <div>
-      <p class="text-primary fw-semibold mb-1">거래 탐지 · 사례 상세</p>
-      <h2 class="mb-2">{{ case.case_id }}</h2>
-      <p class="text-muted mb-0">모든 정보는 공모전 시연용 합성 데이터입니다.</p>
-    </div>
+  {% call page_head(case.case_id, eyebrow="거래 탐지 · 사례 상세",
+                    desc="폐업이 확인되어 사례로 생성된 거래입니다.") %}
     <a class="btn btn-outline-secondary" href="{{ url_for('detection.index') }}">전체 거래 보기</a>
-  </div>
+  {% endcall %}
 
   <div class="card shadow-sm mb-4">
     <div class="card-body">
@@ -60,28 +58,18 @@
 
   <a class="btn btn-primary" href="{{ url_for('evidence.index', case_id=case.case_id) }}">증빙자료 입력으로 이동</a>
 {% else %}
-  <div class="d-flex justify-content-between align-items-end mb-4 gap-3">
-    <div>
-      <p class="text-primary fw-semibold mb-1">A 담당 · 거래 탐지</p>
-      <h2 class="mb-2">잠재적 피해 거래 탐지</h2>
-      <p class="text-muted mb-0">조건을 통과한 거래만 가맹점 상태를 확인하고, 폐업 거래를 사례로 생성합니다.</p>
-    </div>
+  {% call page_head("잠재적 피해 거래 탐지", eyebrow="1단계 · 거래 탐지",
+                    desc="장기할부·잔여 할부금 조건을 통과한 거래만 가맹점 상태를 확인해 알림 대상을 가려냅니다.") %}
     <span class="badge text-bg-light border">합성 데이터 시연</span>
-  </div>
+  {% endcall %}
 
   {% set total = rows|length %}
   {% set base_count = rows|selectattr('base_eligible')|list|length %}
   {% set target_count = rows|selectattr('is_alert_target')|list|length %}
-  <div class="row g-3 mb-4">
-    <div class="col-4">
-      <div class="card h-100 shadow-sm"><div class="card-body"><small class="text-muted">전체 거래</small><div class="fs-3 fw-bold">{{ total }}</div></div></div>
-    </div>
-    <div class="col-4">
-      <div class="card h-100 shadow-sm"><div class="card-body"><small class="text-muted">기본 조건 충족</small><div class="fs-3 fw-bold">{{ base_count }}</div></div></div>
-    </div>
-    <div class="col-4">
-      <div class="card h-100 shadow-sm border-danger"><div class="card-body"><small class="text-muted">알림 대상</small><div class="fs-3 fw-bold text-danger">{{ target_count }}</div></div></div>
-    </div>
+  <div class="nd-stats mb-4">
+    <div class="nd-stat"><span class="k">전체 거래</span><strong class="v">{{ total }}</strong></div>
+    <div class="nd-stat"><span class="k">기본 조건 충족</span><strong class="v">{{ base_count }}</strong></div>
+    <div class="nd-stat is-alert"><span class="k">알림 대상</span><strong class="v">{{ target_count }}</strong></div>
   </div>
 
   <div id="case-create-message" class="mb-3" aria-live="polite"></div>
@@ -111,13 +99,17 @@
               <small class="text-muted">{{ tx.installment_months }}개월 · 잔여 {{ "{:,}".format(tx.remaining_balance) }}원</small>
             </td>
             <td>
-              <ul class="list-unstyled small mb-0">
+              {# 조건은 이름 없이 통과/제외 표시만 남겨 표를 읽기 쉽게 한다.
+                 각 칩에 마우스를 올리면 조건 이름과 결과가 그대로 보인다. #}
+              <div class="cond-chips">
                 {% for condition in row.conditions %}
-                  <li class="{% if condition.passed %}text-success{% else %}text-danger{% endif %}">
-                    {{ condition.label }}: {% if condition.passed %}충족{% else %}제외{% endif %}
-                  </li>
+                  <span class="cond-chip {% if condition.passed %}is-pass{% else %}is-fail{% endif %}"
+                        title="{{ condition.label }}: {% if condition.passed %}충족{% else %}제외{% endif %}">
+                    <span class="mark" aria-hidden="true">{% if condition.passed %}✓{% else %}×{% endif %}</span>
+                    {{ condition.label|replace(" 기준", "")|replace("장기 서비스 ", "") }}
+                  </span>
                 {% endfor %}
-              </ul>
+              </div>
             </td>
             <td>
               {% if row.status %}
@@ -156,7 +148,7 @@
 
   {% if cases %}
     <section class="mt-5">
-      <h3 class="fs-5 mb-3">준비된 사례</h3>
+      <h2 class="h5 mb-3">준비된 사례</h2>
       <div class="list-group shadow-sm">
         {% for c in cases %}
           <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" href="{{ url_for('detection.case_detail', case_id=c.case_id) }}">
