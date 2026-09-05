@@ -1,90 +1,82 @@
 {% extends "base.html" %}
-{% from "_ui.html" import source_badge, nav_buttons %}
+{% from "_ui.html" import source_badge, nav_buttons, page_head %}
 
 {% block title %}제출자료 확인{% endblock %}
 
 {% block content %}
 {% set case = result.case %}
 
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-  <h1 class="h3 mb-0">제출자료 초안 · {{ case.case_id }}</h1>
+{% call page_head("카드사에 낼 서류가<br>준비됐어요"|safe, eyebrow="제출자료 · " ~ case.case_id,
+                  desc="사실과 다른 부분은 직접 고칠 수 있어요. 최종 인정 여부는 카드사가 심사하여 결정합니다.") %}
   {{ source_badge(draft.source) }}
-</div>
+{% endcall %}
 
 {% if request.args.get('saved') %}
-  <div class="alert alert-success small">수정한 내용을 저장했습니다. 아래 미리보기와 내려받는 파일에 반영됩니다.</div>
+  <div class="alert alert-success">수정한 내용을 저장했습니다. 아래 미리보기와 내려받는 파일에 반영됩니다.</div>
 {% endif %}
-
-<p class="text-muted">
-  AI가 정리한 초안입니다. 사실과 다른 부분은 직접 고칠 수 있습니다.
-  최종 인정 여부는 카드사가 심사하여 결정합니다.
-</p>
 
 <form method="post" action="{{ url_for('result.save_submission', case_id=case.case_id) }}"
       data-loading="수정한 내용을 저장하고 있습니다">
-  <div class="nd-card">
-    <h3 class="h6 mb-3">내용 확인과 수정</h3>
-    {% for section in draft.sections %}
-      <div class="draft-section mb-3">
-        <h4>
-          {{ section.heading }}
-          {% if section.edited %}<span class="badge-source badge-source-user">직접 수정함</span>{% endif %}
-        </h4>
-        <textarea name="section-{{ section.key }}" rows="4" aria-label="{{ section.heading }}">{{ section.body }}</textarea>
-      </div>
-    {% endfor %}
-
-    <div class="d-flex flex-wrap gap-2">
-      <button class="btn btn-primary" type="submit">수정 내용 저장</button>
-      <button class="btn btn-outline-secondary" type="submit" formmethod="post"
-              formaction="{{ url_for('result.reset_submission', case_id=case.case_id) }}">
-        원래 초안으로 되돌리기
-      </button>
+  {% for section in draft.sections %}
+    <div class="draft-section">
+      <h4>
+        {{ section.heading }}
+        {% if section.edited %}<span class="badge-source badge-source-user">직접 수정함</span>{% endif %}
+      </h4>
+      <textarea name="section-{{ section.key }}" rows="4" aria-label="{{ section.heading }}">{{ section.body }}</textarea>
     </div>
+  {% endfor %}
+
+  <div class="d-flex flex-wrap gap-2 mb-4">
+    <button class="btn btn-outline-primary btn-sm" type="submit">수정 내용 저장</button>
+    <button class="btn btn-outline-secondary btn-sm" type="submit" formmethod="post"
+            formaction="{{ url_for('result.reset_submission', case_id=case.case_id) }}">
+      원래 초안으로 되돌리기
+    </button>
   </div>
 </form>
 
-<div class="nd-card">
-  <h3 class="h6">첨부자료</h3>
-  {% if draft.attachments %}
-    <ul class="mb-0 small">{% for item in draft.attachments %}<li>{{ item }}</li>{% endfor %}</ul>
-  {% else %}
-    <p class="small text-muted mb-0">아직 올린 자료가 없습니다. 자료 입력 화면에서 계약서와 문자 기록을 올려 주세요.</p>
-  {% endif %}
-</div>
+<h2 class="nd-sec">첨부자료</h2>
+{% if draft.attachments %}
+  {% for item in draft.attachments %}
+    <div class="nd-file">
+      <span class="ic">첨부</span>
+      <div class="nm">{{ item }}</div>
+    </div>
+  {% endfor %}
+{% else %}
+  <p class="nd-note">아직 올린 자료가 없습니다. 자료 입력 화면에서 계약서와 문자 기록을 올려 주세요.</p>
+{% endif %}
 
-<div class="nd-card">
-  <h3 class="h6">제출자료 미리보기</h3>
-  <div class="draft-preview">{{ preview }}</div>
+<h2 class="nd-sec">내려받기와 인쇄</h2>
+<div class="d-flex flex-wrap gap-2 no-print">
+  <a class="btn btn-outline-primary" href="{{ url_for('result.download', case_id=case.case_id) }}">
+    텍스트 파일로 내려받기
+  </a>
+  <a class="btn btn-outline-primary" href="{{ url_for('result.print_view', case_id=case.case_id) }}"
+     target="_blank" rel="noopener">인쇄 · PDF로 저장</a>
 </div>
+<p class="nd-note">
+  인쇄 화면에서 브라우저의 인쇄 기능을 열고 대상을 <strong>PDF로 저장</strong>으로 고르면 PDF 파일을 만들 수 있습니다.
+</p>
 
-<div class="nd-card no-print">
-  <h3 class="h6">내려받기와 인쇄</h3>
-  <div class="d-flex flex-wrap gap-2 mb-3">
-    <a class="btn btn-primary" href="{{ url_for('result.download', case_id=case.case_id) }}">
-      텍스트 파일로 내려받기
-    </a>
-    <a class="btn btn-outline-primary" href="{{ url_for('result.print_view', case_id=case.case_id) }}" target="_blank" rel="noopener">
-      인쇄 · PDF로 저장
-    </a>
-  </div>
-  <p class="small text-muted mb-0">
-    인쇄 화면에서 브라우저의 인쇄 기능을 열고 대상을 <strong>PDF로 저장</strong>으로 고르면 PDF 파일을 만들 수 있습니다.
-  </p>
-</div>
+<details class="nd-card">
+  <summary class="fw-bold" style="cursor:pointer">제출자료 미리보기</summary>
+  <div class="draft-preview mt-3">{{ preview }}</div>
+</details>
 
-<div class="nd-card">
-  <h3 class="h6">카드사 접수 경로 안내</h3>
-  <ol class="small mb-2">
+<details class="nd-card">
+  <summary class="fw-bold" style="cursor:pointer">카드사 접수 경로 안내</summary>
+  <ol class="mt-3 mb-2">
     <li>카드사 고객센터 또는 카드사 앱의 <strong>할부항변권 행사</strong> 메뉴에서 신청서를 접수합니다.</li>
     <li>위에서 내려받은 초안 내용을 신청서에 옮겨 적고, 계약서·문자 기록·중단 안내문을 함께 제출합니다.</li>
     <li>접수 후 카드사 심사 결과를 안내받습니다.</li>
   </ol>
-  <p class="small text-muted mb-0">
+  <p class="text-muted mb-0">
     MVP에서는 카드사별 접수 화면을 각각 구현하지 않고 일반 안내만 제공합니다.
     이 서비스는 접수를 대신 진행하지 않습니다.
   </p>
-</div>
+</details>
 
 {{ nav_buttons(prev_url=url_for('result.case_result', case_id=case.case_id), prev_label="결과 화면",
                next_url=url_for('index'), next_label="처음으로") }}

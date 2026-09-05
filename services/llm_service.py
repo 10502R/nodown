@@ -169,7 +169,7 @@ def _apply_answers_to_fixture(result, answers):
     ]
 
     claims = [
-        "추가 확인 질문 '{0}'에 대해 소비자는 '{1}'라고 답변하였다.".format(
+        "추가 확인 질문 '{0}'에 대해 소비자는 '{1}'라고 답변했습니다.".format(
             item["question"].strip(), answer_label[item["answer"]]
         )
         for item in answer_items
