@@ -11,6 +11,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="장기할부 서비스 중단 피해 선제 탐지 및 할부항변 준비 지원 서비스(시연용)">
   <title>{% block title %}장기할부 피해 탐지 서비스{% endblock %} : nodown</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon/favicon.svg') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon/favicon-16x16.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon/apple-touch-icon.png') }}">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   {# 본문 글꼴: Pretendard Variable(동적 서브셋). 실패하면 style.css의 대체 글꼴로 넘어간다. #}
   <link rel="stylesheet" as="style" crossorigin
@@ -26,7 +31,7 @@
   <nav class="navbar app-navbar">
     <div class="container">
       <a class="navbar-brand" href="{{ url_for('index') }}">
-        <span class="brand-mark">nd</span> nodown
+        <img class="brand-mark" src="{{ url_for('static', filename='favicon/favicon.svg') }}" alt="" width="26" height="26"> nodown
       </a>
       {# 흐름 중간에서 빠져나갈 통로. 소개 화면에서는 같은 곳을 가리키므로 숨긴다. #}
       {% if active_step is defined and active_step %}
