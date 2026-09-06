@@ -37,7 +37,7 @@
   {% endif %}
 
   {{ nav_buttons(prev_url=url_for('detection.index'), prev_label="전체 거래",
-                 next_url=url_for('evidence.index', case_id=case.case_id), next_label="증빙자료 입력으로 이동") }}
+                 next_url=url_for('result.case_confirm', case_id=case.case_id), next_label="상황 확인으로 이동") }}
 
 {% else %}
   {% set total = rows|length %}
