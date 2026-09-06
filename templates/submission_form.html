@@ -51,6 +51,9 @@
     background: #fff;
     cursor: pointer;
   }
+  .toolbar button + button{
+    margin-left: 8px;
+  }
 
   /* ── 머리말 ─────────────────────────────── */
   .doc-title{
@@ -209,7 +212,10 @@
 
 {% set context = context|default({}) %}
 
-<div class="toolbar no-print"><button type="button" id="nd-print-btn">인쇄 / PDF 저장</button></div>
+<div class="toolbar no-print">
+  <button type="button" id="nd-print-btn">인쇄 / PDF 저장</button>
+  <button type="button" id="nd-close-btn">닫기</button>
+</div>
 
 <div class="sheet" data-case-id="{{ case_id or '' }}">
 
