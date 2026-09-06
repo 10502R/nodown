@@ -309,7 +309,19 @@ a.nd-row:hover { background: #fbfcfe; color: inherit; }
 .choice-item input { margin-right: .6rem; accent-color: var(--nd-primary); }
 .choice-item.selected { border-color: var(--nd-primary); box-shadow: 0 0 0 4px rgba(31, 79, 216, .10); }
 .choice-item .choice-label { font-weight: 700; font-size: 1.03rem; letter-spacing: -.02em; }
-.choice-item .choice-hint { color: var(--nd-muted); font-size: .88rem; margin: .45rem 0 0 1.6rem; }
+.choice-item .choice-hint { display: none; }
+
+/* 고른 항목의 안내만 목록 아래 한 칸에 보여준다. */
+.choice-guide {
+  background: var(--nd-primary-soft);
+  color: var(--nd-muted);
+  border-radius: 14px;
+  padding: .9rem 1.1rem;
+  font-size: .89rem;
+  margin: -1rem 0 1.75rem;
+  max-width: 41rem;
+}
+.choice-guide[hidden] { display: none; }
 
 /* --- 카드사 앱 알림 --- */
 
