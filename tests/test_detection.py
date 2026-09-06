@@ -25,6 +25,18 @@ def test_case_creation_api_returns_case_url():
     assert body["isSynthetic"] is True
 
 
+def test_prepared_case_detail_continues_to_situation_confirm():
+    client = create_app().test_client()
+
+    response = client.get("/detection/CASE-001")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "/case/CASE-001" in body
+    assert "상황 확인으로 이동" in body
+    assert "증빙자료 입력으로 이동" not in body
+
+
 def test_case_creation_api_rejects_normal_business():
     client = create_app().test_client()
 
