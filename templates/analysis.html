@@ -238,7 +238,7 @@
         {% if request.args.get('saved') %}
         <div class="alert alert-success d-flex align-items-center py-2 small mb-3" role="alert">
           <i class="bi bi-check-circle me-2 flex-shrink-0"></i>
-          <div>답변이 저장되었습니다. 위의 "다시 분석 실행"을 누르면 분석 결과에 반영됩니다.</div>
+          <div>답변과 추가 설명이 저장되었습니다. 분석 결과와 신청서 서술란에 반영됩니다.</div>
         </div>
         {% endif %}
         <form method="post" action="{{ url_for('analysis.save_followup_answers', case_id=case.case_id if case else 'CASE-001') }}">
@@ -270,7 +270,7 @@
           <label class="form-label small fw-semibold" for="followupExtraNote">추가로 설명하고 싶은 내용</label>
           <textarea class="form-control" id="followupExtraNote" name="followup_extra_note" rows="3" placeholder="위 질문들과 관련해 추가로 설명하고 싶은 내용이 있다면 자유롭게 적어 주세요.">{{ saved_answers.extra_note if saved_answers else '' }}</textarea>
           <button type="submit" class="btn btn-primary btn-sm mt-3"><i class="bi bi-save me-1"></i>답변 저장</button>
-          <p class="small text-muted mt-2 mb-0">저장한 답변과 설명은 소비자의 진술로만 취급되며, 다시 분석을 실행하면 분석 결과·제출자료에 참고 반영됩니다.</p>
+          <p class="small text-muted mt-2 mb-0">저장한 예/아니오 답변과 추가 설명은 소비자의 진술로만 취급되며, 신청서 4번 서술란에 붙습니다.</p>
           {% endif %}
         </form>
       </div>

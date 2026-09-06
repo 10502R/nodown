@@ -135,6 +135,20 @@ def test_analyze_case_success_sets_source_ai_and_normalizes_empty_contradictions
     assert result["submissionSummary"] == "요약 초안"
 
 
+def test_analyze_case_appends_extra_note_when_model_omits_it(monkeypatch):
+    valid = _empty_analysis()
+    _mock_openai_returning(monkeypatch, valid)
+
+    result = llm_service.analyze_case(
+        "CASE-001",
+        case={"case_id": "CASE-001"},
+        answers={"answers": [], "extra_note": "매니저가 환불은 본사에서만 가능하다고 했습니다."},
+    )
+
+    assert result["_source"] == "ai"
+    assert "매니저가 환불은 본사에서만 가능하다고 했습니다." in result["submissionSummary"]
+
+
 def test_analyze_case_no_api_key_returns_fixture_source(monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.setattr(llm_service, "_client", None)

@@ -38,6 +38,11 @@ def _evidence_documents(case_id):
     return session.get("evidence:{0}".format(case_id))
 
 
+def _followup_answers(case_id):
+    """분석 화면 7번에 저장한 예/아니오 답변과 보충 설명을 읽는다."""
+    return session.get("followup_answers:{0}".format(case_id)) or {}
+
+
 # --- 카드사 앱 알림 시뮬레이션(D-3) -------------------------------------
 
 @result_bp.route("/demo/card-app")
@@ -195,7 +200,9 @@ def submission_form(case_id):
     case = report_service.apply_evidence(case, documents) or case
 
     evidence = form_context.build_evidence_from_case(case, documents)
-    context = form_context.build_form_context(evidence)
+    context = form_context.build_form_context(
+        evidence, followup_answers=_followup_answers(case_id)
+    )
     return render_template("submission_form.html", context=context, case_id=case_id)
 
 
