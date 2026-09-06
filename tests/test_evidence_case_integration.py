@@ -58,7 +58,7 @@ def test_situation_answer_takes_priority_over_evidence_for_replacement_flag():
     """소비자가 상황 확인에서 이미 답했다면 증빙에서 추출된 값으로 덮어쓰지 않는다."""
     client = _client()
 
-    # '다른 지점에서 정상 이용 중임' -> replacement_service_offered = True
+    # '다른 지점에서 정상 이용 중이에요' -> replacement_service_offered = True
     client.post(
         "/case/{0}/situation".format(CASE_ID),
         data={"situation": "normal_use"},

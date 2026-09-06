@@ -65,7 +65,7 @@ def test_환불완료_선택은_안내화면으로_종료된다(client):
 def test_선택한_상황이_새로고침해도_유지된다(client):
     client.post("/case/CASE-001/situation", data={"situation": "unusable"})
     body = client.get("/case/CASE-001").get_data(as_text=True)
-    assert "더 이상 서비스를 이용하지 못하고 있음" in body
+    assert "서비스를 이용하지 못하고 있어요" in body
     assert "자료 입력으로 이동" in body
 
 
@@ -144,7 +144,7 @@ def test_상황선택이_규칙엔진_입력에_반영된다():
     case, _ = report_service.load_case("CASE-001")
     merged = report_service.apply_situation(case, "refunded")
     assert merged["refund_completed"] is True
-    assert merged["situation_label"] == "이미 환불받았음"
+    assert merged["situation_label"] == "전액 환불받았어요"
 
 
 def test_AI가_연결되지_않으면_제출자료_출처가_예비데이터로_표시된다():

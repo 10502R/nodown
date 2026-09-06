@@ -38,7 +38,7 @@ DISCLAIMERS = [
 SITUATION_CHOICES = [
     {
         "key": "unusable",
-        "label": "더 이상 서비스를 이용하지 못하고 있음",
+        "label": "서비스를 이용하지 못하고 있어요",
         "next": "evidence",
         "guidance": "할부항변 기본요건을 확인할 수 있는 상황입니다. 계약서와 환불 요청 기록을 준비해 주세요.",
         "answers": {
@@ -51,7 +51,7 @@ SITUATION_CHOICES = [
     },
     {
         "key": "refunded",
-        "label": "이미 환불받았음",
+        "label": "전액 환불받았어요",
         "next": "end",
         "guidance": (
             "이미 환불이 완료된 거래는 할부항변 대상이 아닙니다. "
@@ -61,7 +61,7 @@ SITUATION_CHOICES = [
     },
     {
         "key": "normal_use",
-        "label": "다른 지점에서 정상 이용 중임",
+        "label": "다른 지점에서 정상 이용 중이에요",
         "next": "end",
         "guidance": (
             "대체 서비스를 정상적으로 이용 중이라면 할부항변 대상이 아닙니다. "
@@ -71,7 +71,7 @@ SITUATION_CHOICES = [
     },
     {
         "key": "unknown",
-        "label": "정확히 모르겠음",
+        "label": "잘 모르겠어요",
         "next": "evidence",
         "guidance": (
             "다음 세 가지를 먼저 확인해 주세요. "
