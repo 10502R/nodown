@@ -50,17 +50,14 @@
 
 <h2 class="nd-sec">내려받기와 인쇄</h2>
 <div class="d-flex flex-wrap gap-2 no-print">
+  <a class="btn btn-primary" href="{{ url_for('result.submission_form', case_id=case.case_id) }}"
+     target="_blank" rel="noopener">할부항변 신청서(표준 양식) 작성</a>
   <a class="btn btn-outline-primary" href="{{ url_for('result.download', case_id=case.case_id) }}">
     텍스트 파일로 내려받기
   </a>
-  <a class="btn btn-outline-primary" href="{{ url_for('result.print_view', case_id=case.case_id) }}"
-     target="_blank" rel="noopener">인쇄 · PDF로 저장</a>
-  <a class="btn btn-primary" href="{{ url_for('result.submission_form', case_id=case.case_id) }}"
-     target="_blank" rel="noopener">할부항변 신청서(표준 양식) 작성</a>
 </div>
 <p class="nd-note">
-  인쇄 화면에서 브라우저의 인쇄 기능을 열고 대상을 <strong>PDF로 저장</strong>으로 고르면 PDF 파일을 만들 수 있습니다.
-  신청서 양식은 카드사 제출용 표준 서식에 맞춰 항목을 채워 줍니다.
+  신청서 양식은 카드사 제출용 표준 서식에 맞춰 항목을 채워 주며, 화면의 인쇄 기능을 열고 대상을 <strong>PDF로 저장</strong>으로 고르면 PDF 파일로도 만들 수 있습니다.
 </p>
 
 <details class="nd-card">

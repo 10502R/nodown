@@ -74,4 +74,15 @@
       window.print();
     });
   }
+
+  var closeButton = document.getElementById("nd-close-btn");
+  if (closeButton) {
+    closeButton.addEventListener("click", function () {
+      window.close();
+      // 새 탭으로 열리지 않아 window.close()가 막힌 경우를 위한 대안.
+      if (!window.closed && window.history.length > 1) {
+        window.history.back();
+      }
+    });
+  }
 })();
