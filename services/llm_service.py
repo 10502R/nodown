@@ -196,6 +196,24 @@ def _apply_answers_to_fixture(result, answers):
     return result
 
 
+def _append_extra_note(result, answers):
+    """실제 AI 응답에도 소비자 보충 설명을 빠뜨리지 않고 붙인다.
+
+    모델이 followUpAnswers를 무시해도 7번 칸에 적은 글이 제출 요약에 남게 한다.
+    이미 같은 문장이 있으면 중복해서 붙이지 않는다.
+    """
+    extra_note = ((answers or {}).get("extra_note") or "").strip()
+    if not extra_note:
+        return result
+    summary = result.get("submissionSummary") or ""
+    if extra_note in summary:
+        return result
+    result["submissionSummary"] = "{0}\n\n소비자가 추가로 설명한 내용: {1}".format(
+        summary, extra_note
+    ).strip()
+    return result
+
+
 def analyze_case(case_id="CASE-001", case=None, evidence=None, answers=None) -> dict:
     """
     사례의 거래/이용 내역 및 증빙을 분석하여 C-2 8개 키 구조의 dict 반환.
@@ -260,7 +278,7 @@ def analyze_case(case_id="CASE-001", case=None, evidence=None, answers=None) -> 
             )
         parsed = _normalize_analysis(parsed)
         parsed["_source"] = "ai"
-        return parsed
+        return _append_extra_note(parsed, answers)
     except Exception as e:
         print(f"[llm_service] API 호출 또는 파싱 에러 (Fallback 실행): {e}")
         return _apply_answers_to_fixture(_load_fixture_result(), answers)

@@ -122,12 +122,52 @@ def _verified(evidence, path):
     return value
 
 
-def _build_statement(evidence):
-    """해당 건의 계약·이용·중단·환불 정보를 시간 순 설명체 문장으로 종합한다.
+def _claim_line(evidence):
+    """잔여 할부금이 확인된 경우에만 납부 거절 취지를 한 줄로 만든다."""
+    remaining = _verified(evidence, ("transaction", "remainingAmount"))
+    remaining_months = _verified(evidence, ("transaction", "remainingMonths"))
+    if remaining is None:
+        return None
+    amount_text = _format_amount(remaining)
+    if remaining_months:
+        return (
+            "미도래 {0}회 잔여 할부금 {1}원에 대해 납부 거절을 신청합니다.".format(
+                remaining_months, amount_text
+            )
+        )
+    return "잔여 할부금 {0}원에 대해 납부 거절을 신청합니다.".format(amount_text)
 
-    4번 항목 서술란의 안내 문구(본인 사용 여부, 계약 체결일, 서비스 시행일,
-    가맹점 해지 통보일, 가맹점과의 분쟁 내용 등)를 그대로 따른다. 확인되지
-    않은 항목은 추측해서 채우지 않고 문장 자체를 뺀다.
+
+_FOLLOWUP_ANSWER_LABELS = {"yes": "예", "no": "아니오", "unknown": "모르겠음"}
+
+
+def _extra_note_lines(extra_note):
+    """소비자가 직접 적은 보충 설명을 문장 단위로 나눈다. 없으면 빈 목록."""
+    if not extra_note:
+        return []
+    return [part.strip() for part in str(extra_note).splitlines() if part.strip()]
+
+
+def _followup_lines(followup_answers, extra_note=None):
+    """7번 라디오 답변과 보충 설명을 서술란 문장으로 만든다."""
+    answers = followup_answers or {}
+    lines = []
+    for item in answers.get("answers") or []:
+        question = (item.get("question") or "").strip()
+        label = _FOLLOWUP_ANSWER_LABELS.get(item.get("answer"))
+        if question and label:
+            lines.append("{0}: {1}".format(question, label))
+    note = extra_note if extra_note is not None else answers.get("extra_note")
+    lines.extend(_extra_note_lines(note))
+    return lines
+
+
+def _build_statement(evidence, extra_note=None, followup_answers=None):
+    """신청서 4번 서술란용 경위를 시간 순 문장으로 만든다.
+
+    계약 → 이용 시작 → 중단 → 이후 이용 여부 → 안내 → 환불 요청 → 가맹점 회신
+    → 대체 지점 → 추가 확인 답변 → 소비자 보충 설명 → 청구 취지 순이다.
+    확인되지 않은 항목은 추측하지 않고 뺀다.
     """
     lines = []
 
@@ -154,7 +194,9 @@ def _build_statement(evidence):
         duration = _months_between(start_date, stop_date) if start_date else None
         if duration:
             lines.append(
-                "{0}에 서비스가 중단되었습니다(실제 이용 기간 약 {1}개월).".format(_format_date(stop_date), duration)
+                "{0}에 서비스가 중단되었습니다(실제 이용 기간 약 {1}개월).".format(
+                    _format_date(stop_date), duration
+                )
             )
         else:
             lines.append("{0}에 서비스가 중단되었습니다.".format(_format_date(stop_date)))
@@ -185,11 +227,21 @@ def _build_statement(evidence):
             "대체 지점 이용 안내를 받았습니다." if replacement_offered else "대체 지점 이용 안내를 받지 못했습니다."
         )
 
+    lines.extend(_followup_lines(followup_answers, extra_note=extra_note))
+
+    claim = _claim_line(evidence)
+    if claim:
+        lines.append(claim)
+
     return lines
 
 
-def build_form_context(evidence):
+def build_form_context(evidence, extra_note=None, followup_answers=None):
     """evidence 데이터를 신청서 서식용 컨텍스트 dict로 변환한다.
+
+    followup_answers는 분석 화면 7번의 예/아니오 답변과 보충 설명이다.
+    extra_note만 넘긴 경우에도 보충 설명은 그대로 붙인다.
+    확인된 경위 뒤에 소비자 진술로 붙이고, 없으면 무시한다.
 
     순수 함수다: evidence를 읽기만 하고, 파일을 쓰거나 다른 서비스를
     호출하지 않는다.
@@ -214,7 +266,9 @@ def build_form_context(evidence):
         else:
             context[output_key] = list(value)
 
-    context["statement"] = _build_statement(evidence)
+    context["statement"] = _build_statement(
+        evidence, extra_note=extra_note, followup_answers=followup_answers
+    )
     context["unverifiedFields"] = unverified_fields
     return context
 

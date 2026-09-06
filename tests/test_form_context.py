@@ -74,6 +74,7 @@ def test_build_form_context_all_verified():
         "2026.08.10에 가맹점으로부터 중단 안내를 받았습니다.",
         "2026.08.11에 가맹점에 환불을 요청하였습니다.",
         "가맹점의 답변은 다음과 같습니다: 환불 거부.",
+        "미도래 7회 잔여 할부금 700,000원에 대해 납부 거절을 신청합니다.",
     ]
 
 
@@ -105,6 +106,7 @@ def test_build_form_context_with_unverified_fields():
         "2026.08.10에 서비스가 중단되었습니다(실제 이용 기간 약 5개월).",
         "2026.08.11에 가맹점에 환불을 요청하였습니다.",
         "가맹점의 답변은 다음과 같습니다: 환불 거부.",
+        "미도래 7회 잔여 할부금 700,000원에 대해 납부 거절을 신청합니다.",
     ]
 
 
@@ -147,6 +149,7 @@ def test_build_form_context_with_missing_and_fallback_fields():
         "2026.08.10에 서비스가 중단되었습니다(실제 이용 기간 약 5개월).",
         "2026.08.10에 가맹점으로부터 중단 안내를 받았습니다.",
         "2026.08.11에 가맹점에 환불을 요청하였습니다.",
+        "미도래 7회 잔여 할부금 700,000원에 대해 납부 거절을 신청합니다.",
     ]
 
 
@@ -175,8 +178,55 @@ def test_build_evidence_from_case_derives_reason_types_from_confirmed_status():
     assert context["reasonTypes"] == ["부도/폐업/연락불가", "서비스 미제공"]
     assert "reasonTypes" not in context["unverifiedFields"]
     assert context["merchant.bizNo"] == "000-00-00003"
-    # 대체 지점 안내를 받지 못했다는 사실이 서술란에 그대로 반영된다.
-    assert context["statement"][-1] == "대체 지점 이용 안내를 받지 못했습니다."
+    assert "대체 지점 이용 안내를 받지 못했습니다." in context["statement"]
+    assert context["statement"][-1] == (
+        "미도래 7회 잔여 할부금 700,000원에 대해 납부 거절을 신청합니다."
+    )
+
+
+def test_build_form_context_appends_extra_note_before_claim():
+    context = build_form_context(
+        _full_evidence(),
+        extra_note="매니저가 환불은 본사에서만 가능하다고 했습니다.\n내용증명은 아직 보내지 못했습니다.",
+    )
+
+    assert context["statement"][-3] == "매니저가 환불은 본사에서만 가능하다고 했습니다."
+    assert context["statement"][-2] == "내용증명은 아직 보내지 못했습니다."
+    assert context["statement"][-1] == (
+        "미도래 7회 잔여 할부금 700,000원에 대해 납부 거절을 신청합니다."
+    )
+
+
+def test_build_form_context_ignores_blank_extra_note():
+    context = build_form_context(_full_evidence(), extra_note="   \n  ")
+    assert context["statement"][-1] == (
+        "미도래 7회 잔여 할부금 700,000원에 대해 납부 거절을 신청합니다."
+    )
+    assert all("본사" not in line for line in context["statement"])
+
+
+def test_build_form_context_appends_followup_answers_before_extra_note():
+    context = build_form_context(
+        _full_evidence(),
+        followup_answers={
+            "answers": [
+                {"question": "환불·양도를 받지 못했습니까?", "answer": "yes"},
+                {"question": "중단 이후 이용하지 못했습니까?", "answer": "no"},
+                {"question": "내용증명을 보냈습니까?", "answer": "unknown"},
+                {"question": "빈 질문", "answer": "maybe"},
+            ],
+            "extra_note": "매니저가 환불은 본사에서만 가능하다고 했습니다.",
+        },
+    )
+
+    assert "환불·양도를 받지 못했습니까?: 예" in context["statement"]
+    assert "중단 이후 이용하지 못했습니까?: 아니오" in context["statement"]
+    assert "내용증명을 보냈습니까?: 모르겠음" in context["statement"]
+    assert "빈 질문: maybe" not in context["statement"]
+    assert context["statement"][-2] == "매니저가 환불은 본사에서만 가능하다고 했습니다."
+    assert context["statement"][-1] == (
+        "미도래 7회 잔여 할부금 700,000원에 대해 납부 거절을 신청합니다."
+    )
 
 
 def test_build_evidence_from_case_includes_used_after_closure_when_confirmed():
